@@ -64,29 +64,27 @@ router.post("/businesses/me/keywords/generate", requireAuth, async (req: any, re
   const business = await getBusinessForUser(req.userId);
   if (!business) { res.status(404).json({ error: "Business not found" }); return; }
 
-  const prompt = `You are an AEO (Answer Engine Optimization) expert. Generate exactly 7 high-value keyword phrases for the following business to optimize for AI answer engines like ChatGPT, Gemini, and Perplexity.
+  const prompt = `You are an AEO (Answer Engine Optimization) expert. Generate exactly 7 high-value single-word keywords for the following business to optimize for AI answer engines like ChatGPT, Gemini, and Perplexity.
 
 Business Name: ${business.businessName}
 Industry: ${business.industry ?? "General"}
 Description: ${business.description ?? "No description provided"}
 
-IMPORTANT RULES:
+CRITICAL RULES — you MUST follow these exactly:
+- Every "keyword" field MUST be a SINGLE word only — no spaces, no hyphens, no phrases
+- Do NOT output multi-word phrases (e.g. "daycare near me" is WRONG; "daycare" is correct)
 - Do NOT include any "near me" phrases
-- Do NOT include location-based queries (e.g. "in [city]", "in [neighborhood]", "near [place]")
-- Do NOT include local SEO phrases or geographic modifiers
-- Focus exclusively on topic-based, intent-based, and industry expertise queries
-- These queries must be appropriate for AI answer engine optimization (AEO), not local SEO
+- Do NOT include location-based or geographic modifiers
+- Focus on core nouns, services, or industry terms that AI engines associate with this business
+- Each keyword must be a standalone word that represents a concept, service, or topic
 
-Focus on:
-- Question-based queries ("how to", "what is", "best way to", "what are the benefits of")
-- High-intent informational queries users ask AI assistants
-- Industry knowledge and expertise queries
-- Problem-solving and decision-making queries
+Good examples: "daycare", "toddler", "preschool", "enrollment", "childcare"
+Bad examples: "best daycare", "near me", "childcare center", "how to find daycare"
 
 Return a JSON array of objects with the exact structure:
 [
   {
-    "keyword": "the keyword phrase",
+    "keyword": "singleword",
     "reason": "brief explanation of why this keyword is valuable for AEO",
     "estimatedVolume": 1000,
     "efficiencyScore": 8.5
@@ -104,7 +102,8 @@ Return only valid JSON, no markdown.`;
   const content = response.choices[0]?.message?.content ?? "[]";
   try {
     const suggestions = JSON.parse(content);
-    res.json(suggestions);
+    const filtered = suggestions.filter((s: any) => typeof s.keyword === "string" && !s.keyword.trim().includes(" "));
+    res.json(filtered);
   } catch {
     res.json([]);
   }
@@ -117,23 +116,26 @@ router.get("/businesses/me/keywords/suggestions", requireAuth, async (req: any, 
   const existingKws = await db.select().from(keywordsTable).where(eq(keywordsTable.businessId, business.id));
   const existing = existingKws.map(k => k.keyword).join(", ");
 
-  const prompt = `You are an AEO expert. Suggest 5 additional keyword improvements for this business to rank better in AI answer engines like ChatGPT, Gemini, and Perplexity.
+  const prompt = `You are an AEO expert. Suggest 5 additional single-word keywords for this business to rank better in AI answer engines like ChatGPT, Gemini, and Perplexity.
 
 Business: ${business.businessName}
 Industry: ${business.industry ?? "General"}
 Existing keywords: ${existing || "none yet"}
 
-IMPORTANT RULES:
-- Do NOT suggest "near me" queries
-- Do NOT suggest location-based or geographic queries
-- Do NOT suggest local SEO phrases
-- Focus on topic-based, intent-based, and authority-building queries
+CRITICAL RULES — you MUST follow these exactly:
+- Every "keyword" field MUST be a SINGLE word only — no spaces, no hyphens, no phrases
+- Do NOT output multi-word phrases of any kind
+- Do NOT suggest "near me" queries or location-based terms
+- Focus on core nouns, services, or industry terms that complement the existing keywords
 - Avoid duplicating existing keywords
+
+Good examples: "daycare", "toddler", "preschool", "enrollment", "childcare"
+Bad examples: "best daycare", "near me", "childcare center", "how to find daycare"
 
 Return a JSON array:
 [
   {
-    "keyword": "suggested keyword phrase",
+    "keyword": "singleword",
     "reason": "why this keyword would improve AEO performance",
     "estimatedVolume": 500,
     "efficiencyScore": 7.2
@@ -151,7 +153,8 @@ Return only valid JSON.`;
   const content = response.choices[0]?.message?.content ?? "[]";
   try {
     const suggestions = JSON.parse(content);
-    res.json(suggestions);
+    const filtered = suggestions.filter((s: any) => typeof s.keyword === "string" && !s.keyword.trim().includes(" "));
+    res.json(filtered);
   } catch {
     res.json([]);
   }
