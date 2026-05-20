@@ -333,6 +333,20 @@ export const ListKeywordLinksResponseItem = zod.object({
     .number()
     .nullish()
     .describe("AI-assessed link efficiency for AEO, 0–100"),
+  aiAccuracyPercent: zod
+    .number()
+    .nullish()
+    .describe("AI-assessed content accuracy\/credibility, 0–100"),
+  aiVisibilityPercent: zod
+    .number()
+    .nullish()
+    .describe("AI-assessed visibility in AI answer engines, 0–100"),
+  aiCustomerInsight: zod
+    .string()
+    .nullish()
+    .describe(
+      "AI insight on whether this link reflects customer-sourced content",
+    ),
   aiAnalysis: zod.string().nullish(),
   analyzedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
@@ -387,6 +401,20 @@ export const AnalyzeKeywordLinkResponse = zod.object({
     .number()
     .nullish()
     .describe("AI-assessed link efficiency for AEO, 0–100"),
+  aiAccuracyPercent: zod
+    .number()
+    .nullish()
+    .describe("AI-assessed content accuracy\/credibility, 0–100"),
+  aiVisibilityPercent: zod
+    .number()
+    .nullish()
+    .describe("AI-assessed visibility in AI answer engines, 0–100"),
+  aiCustomerInsight: zod
+    .string()
+    .nullish()
+    .describe(
+      "AI insight on whether this link reflects customer-sourced content",
+    ),
   aiAnalysis: zod.string().nullish(),
   analyzedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),

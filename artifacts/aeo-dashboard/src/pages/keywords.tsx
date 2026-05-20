@@ -45,8 +45,10 @@ export default function KeywordsPage() {
   const [expandedLinks, setExpandedLinks] = useState<Set<number>>(new Set());
 
   const handleAdd = () => {
-    if (!newKeywordStr.trim()) return;
-    addKeyword.mutate({ data: { keyword: newKeywordStr, isAiGenerated: false } }, {
+    const trimmed = newKeywordStr.trim();
+    if (!trimmed) return;
+    if (/\s/.test(trimmed)) { toast.error("Keywords must be a single word — no spaces allowed"); return; }
+    addKeyword.mutate({ data: { keyword: trimmed, isAiGenerated: false } }, {
       onSuccess: () => {
         toast.success("Keyword added");
         setNewKeywordStr("");
@@ -373,11 +375,17 @@ function KeywordLinksPanel({ keywordId, keywordText }: { keywordId: number; keyw
       ) : (
         <div className="space-y-2">
           {links?.map(link => {
-            const pct = link.aiEfficiencyPercent ?? null;
-            const pctColor = pct == null ? "text-muted-foreground" : pct >= 70 ? "text-green-500" : pct >= 50 ? "text-amber-500" : "text-destructive";
-            const barColor = pct == null ? "bg-muted" : pct >= 70 ? "bg-green-500" : pct >= 50 ? "bg-amber-500" : "bg-destructive";
+            const scoreBar = (val: number | null | undefined) => {
+              const v = val ?? null;
+              const color = v == null ? "bg-muted" : v >= 70 ? "bg-green-500" : v >= 50 ? "bg-amber-500" : "bg-destructive";
+              const textColor = v == null ? "text-muted-foreground" : v >= 70 ? "text-green-500" : v >= 50 ? "text-amber-500" : "text-destructive";
+              return { color, textColor, v };
+            };
+            const eff = scoreBar(link.aiEfficiencyPercent);
+            const acc = scoreBar(link.aiAccuracyPercent);
+            const vis = scoreBar(link.aiVisibilityPercent);
             return (
-            <div key={link.id} className="border rounded-lg p-3 bg-card space-y-2">
+            <div key={link.id} className="border rounded-lg p-3 bg-card space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -396,22 +404,36 @@ function KeywordLinksPanel({ keywordId, keywordText }: { keywordId: number; keyw
                   {link.description && (
                     <p className="text-xs text-muted-foreground mt-1">{link.description}</p>
                   )}
-                  {pct != null && (
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">AEO Efficiency</span>
-                        <span className={`text-sm font-bold ${pctColor}`}>{pct}%</span>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
-                      </div>
+                  {link.aiCustomerInsight && (
+                    <div className="mt-2 flex items-start gap-2 px-2 py-1.5 rounded bg-primary/5 border border-primary/10">
+                      <span className="text-xs font-medium text-primary shrink-0 mt-0.5">Customer insight</span>
+                      <p className="text-xs text-muted-foreground">{link.aiCustomerInsight}</p>
+                    </div>
+                  )}
+                  {(eff.v != null || acc.v != null || vis.v != null) && (
+                    <div className="mt-2 space-y-1.5">
+                      {[
+                        { label: "AEO Efficiency", bar: eff },
+                        { label: "Content Accuracy", bar: acc },
+                        { label: "AI Visibility", bar: vis },
+                      ].map(({ label, bar }) => bar.v != null && (
+                        <div key={label} className="space-y-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">{label}</span>
+                            <span className={`text-xs font-bold ${bar.textColor}`}>{bar.v}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${bar.color}`} style={{ width: `${bar.v}%` }} />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                   {link.aiAnalysis && (
                     <p className="text-xs text-muted-foreground mt-1 italic">{link.aiAnalysis}</p>
                   )}
                   {link.analyzedAt && (
-                    <p className="text-xs text-muted-foreground/60 mt-1">
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">
                       Analyzed {format(new Date(link.analyzedAt), 'MMM d, yyyy')}
                     </p>
                   )}

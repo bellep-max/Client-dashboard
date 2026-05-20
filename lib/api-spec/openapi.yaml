@@ -956,6 +956,15 @@ components:
         aiEfficiencyPercent:
           type: ["integer", "null"]
           description: "AI-assessed link efficiency for AEO, 0–100"
+        aiAccuracyPercent:
+          type: ["integer", "null"]
+          description: "AI-assessed content accuracy/credibility, 0–100"
+        aiVisibilityPercent:
+          type: ["integer", "null"]
+          description: "AI-assessed visibility in AI answer engines, 0–100"
+        aiCustomerInsight:
+          type: ["string", "null"]
+          description: "AI insight on whether this link reflects customer-sourced content"
         aiAnalysis:
           type: ["string", "null"]
         analyzedAt:

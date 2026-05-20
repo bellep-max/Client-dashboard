@@ -224,6 +224,21 @@ export interface KeywordLink {
    * @nullable
    */
   aiEfficiencyPercent?: number | null;
+  /**
+   * AI-assessed content accuracy/credibility, 0–100
+   * @nullable
+   */
+  aiAccuracyPercent?: number | null;
+  /**
+   * AI-assessed visibility in AI answer engines, 0–100
+   * @nullable
+   */
+  aiVisibilityPercent?: number | null;
+  /**
+   * AI insight on whether this link reflects customer-sourced content
+   * @nullable
+   */
+  aiCustomerInsight?: string | null;
   /** @nullable */
   aiAnalysis?: string | null;
   /** @nullable */
