@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { UserButton } from "@clerk/react";
-import { LayoutDashboard, Key, BarChart3, Bot, Settings, Sun, Moon, Plus } from "lucide-react";
+import { UserButton, useClerk } from "@clerk/react";
+import { LayoutDashboard, Key, BarChart3, Bot, Settings, Sun, Moon, Plus, LogOut } from "lucide-react";
 import { useGetMyBusiness } from "@workspace/api-client-react";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -23,6 +23,7 @@ function ThemeToggle() {
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: business } = useGetMyBusiness();
+  const { signOut } = useClerk();
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -102,6 +103,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="text-sm font-medium truncate">{business?.ownerName || "User"}</span>
               <span className="text-xs text-muted-foreground truncate">{business?.businessName || "No business yet"}</span>
             </div>
+            <button
+              onClick={() => signOut({ redirectUrl: "/" })}
+              className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+              title="Sign out"
+              data-testid="button-sign-out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>
