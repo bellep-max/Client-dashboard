@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import { UserButton } from "@clerk/react";
-import { LayoutDashboard, Key, BarChart3, Bot, Settings, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, Key, BarChart3, Bot, Settings, Sun, Moon, Plus } from "lucide-react";
 import { useGetMyBusiness } from "@workspace/api-client-react";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -65,6 +65,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+
+          <div className="pt-2 mt-2 border-t border-border">
+            <Link href="/onboarding?new=1">
+              <div
+                className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground"
+                data-testid="nav-add-business"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="font-medium text-sm">Add Business</span>
+              </div>
+            </Link>
+          </div>
         </nav>
 
         <div className="p-4 border-t border-border space-y-1">
