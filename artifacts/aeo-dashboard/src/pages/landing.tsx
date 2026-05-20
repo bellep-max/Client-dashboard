@@ -1,79 +1,113 @@
 import React from "react";
 import { Link } from "wouter";
+import { SignUp, Show } from "@clerk/react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Bot, LineChart, Target, ShieldCheck } from "lucide-react";
+import { Bot, LineChart, ShieldCheck, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function LandingPage() {
+  const { isDark, toggleTheme } = useTheme();
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <header className="border-b border-border py-4 px-6 flex items-center justify-between bg-card">
+      {/* Header */}
+      <header className="border-b border-border py-4 px-6 flex items-center justify-between bg-card shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded bg-primary flex items-center justify-center font-bold text-primary-foreground">
+          <div className="w-8 h-8 rounded bg-primary flex items-center justify-center font-bold text-primary-foreground text-sm">
             AE
           </div>
           <span className="font-bold tracking-tight text-lg">AEO Platform</span>
         </div>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            data-testid="button-theme-toggle"
+            aria-label="Toggle theme"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
           <Link href="/sign-in">
-            <Button variant="ghost">Sign In</Button>
-          </Link>
-          <Link href="/sign-up">
-            <Button>Get Started</Button>
+            <Button variant="ghost" size="sm">Sign In</Button>
           </Link>
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col">
-        {/* Hero Section */}
-        <section className="py-24 px-6 max-w-6xl mx-auto flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary mb-8 border border-primary/20">
-            <Target className="w-4 h-4" />
-            <span className="text-sm font-medium">Answer Engine Optimization for Local Business</span>
+      {/* Main: Split Layout */}
+      <main className="flex-1 grid lg:grid-cols-2 min-h-0">
+
+        {/* Left: Marketing */}
+        <div className="flex flex-col justify-center px-8 py-16 lg:px-16 xl:px-24">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary mb-8 border border-primary/20 w-fit">
+            <Bot className="w-4 h-4 shrink-0" />
+            <span className="text-sm font-medium">Answer Engine Optimization</span>
           </div>
-          
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight max-w-4xl mb-6">
-            Command your visibility in <span className="text-primary">AI search</span>.
+
+          <h1 className="text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+            Command your<br />
+            visibility in{" "}
+            <span className="text-primary">AI search</span>.
           </h1>
-          
-          <p className="text-xl text-muted-foreground max-w-2xl mb-10">
-            When customers ask AI agents about businesses like yours, ensure you are the answer. AEO Platform gives you the data, strategy, and tools to win the AI search revolution.
+
+          <p className="text-lg text-muted-foreground mb-10 max-w-lg leading-relaxed">
+            When customers ask ChatGPT, Gemini, or Perplexity about businesses like yours, make sure you are the answer.
           </p>
 
-          <Link href="/sign-up">
-            <Button size="lg" className="h-14 px-8 text-lg font-medium group">
-              Start Optimizing
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </Link>
-        </section>
-
-        {/* Features Grid */}
-        <section className="py-20 bg-card border-y border-border">
-          <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8">
-            <div className="p-6 rounded-xl border border-border bg-background">
-              <Bot className="w-10 h-10 text-primary mb-4" />
-              <h3 className="text-xl font-bold mb-2">AI-Driven Keywords</h3>
-              <p className="text-muted-foreground">Discover the exact questions and long-tail phrases users are asking AI assistants about your industry.</p>
+          {/* Feature Pills */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Bot className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">AI Keyword Intelligence</p>
+                <p className="text-muted-foreground text-sm">Discover exactly what people ask AI about your industry.</p>
+              </div>
             </div>
-            
-            <div className="p-6 rounded-xl border border-border bg-background">
-              <LineChart className="w-10 h-10 text-primary mb-4" />
-              <h3 className="text-xl font-bold mb-2">Visibility Tracking</h3>
-              <p className="text-muted-foreground">Monitor your efficiency score and track how often you appear in AI-generated answers over time.</p>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <LineChart className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Bi-Weekly Reports</p>
+                <p className="text-muted-foreground text-sm">Track your efficiency score and visibility trends over time.</p>
+              </div>
             </div>
-            
-            <div className="p-6 rounded-xl border border-border bg-background">
-              <ShieldCheck className="w-10 h-10 text-primary mb-4" />
-              <h3 className="text-xl font-bold mb-2">Profile Authority</h3>
-              <p className="text-muted-foreground">Connect your Google Business Profile and backlinks to feed AI models the verifiable facts they crave.</p>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <ShieldCheck className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Profile Authority</p>
+                <p className="text-muted-foreground text-sm">Connect GBP and backlinks to feed AI models verified facts.</p>
+              </div>
             </div>
           </div>
-        </section>
-      </main>
+        </div>
 
-      <footer className="py-8 px-6 text-center text-muted-foreground border-t border-border">
-        <p>&copy; {new Date().getFullYear()} AEO Platform. All rights reserved.</p>
-      </footer>
+        {/* Right: Sign Up Form */}
+        <div className="flex items-center justify-center px-6 py-12 lg:py-0 bg-card border-l border-border">
+          <div className="w-full max-w-md">
+            <Show when="signed-out">
+              <SignUp
+                routing="hash"
+                signInUrl={`${basePath}/sign-in`}
+                forceRedirectUrl={`${basePath}/dashboard`}
+              />
+            </Show>
+            <Show when="signed-in">
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">You are already signed in.</p>
+                <Link href="/dashboard">
+                  <Button>Go to Dashboard</Button>
+                </Link>
+              </div>
+            </Show>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

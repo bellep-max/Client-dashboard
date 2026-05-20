@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef, useEffect } from "react";
+import { useTheme } from "@/hooks/use-theme";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
@@ -175,10 +176,7 @@ function ClerkProviderWithRoutes() {
 }
 
 function App() {
-  // Ensure dark mode is active
-  useEffect(() => {
-    document.documentElement.classList.add("dark");
-  }, []);
+  useTheme(); // initialises theme from localStorage and keeps <html> class in sync
 
   return (
     <TooltipProvider>

@@ -1,8 +1,24 @@
 import React, { useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { UserButton, useUser } from "@clerk/react";
-import { LayoutDashboard, Key, BarChart3, Bot, Settings } from "lucide-react";
+import { UserButton } from "@clerk/react";
+import { LayoutDashboard, Key, BarChart3, Bot, Settings, Sun, Moon } from "lucide-react";
 import { useGetMyBusiness } from "@workspace/api-client-react";
+import { useTheme } from "@/hooks/use-theme";
+
+function ThemeToggle() {
+  const { isDark, toggleTheme } = useTheme();
+  return (
+    <button
+      onClick={toggleTheme}
+      className="flex items-center gap-3 px-3 py-2 rounded-md w-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      data-testid="button-theme-toggle"
+      aria-label="Toggle theme"
+    >
+      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      <span className="font-medium text-sm">{isDark ? "Light Mode" : "Dark Mode"}</span>
+    </button>
+  );
+}
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -12,7 +28,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (!isLoading && business && !business.onboardingComplete && location !== "/onboarding") {
       setLocation("/onboarding");
     } else if (!isLoading && !business && location !== "/onboarding") {
-      // Need onboarding
       setLocation("/onboarding");
     }
   }, [business, isLoading, location, setLocation]);
@@ -29,12 +44,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside className="w-full md:w-64 border-r border-border bg-card flex flex-col shrink-0">
         <div className="p-6 border-b border-border flex items-center gap-3">
-          <div className="w-8 h-8 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold">
+          <div className="w-8 h-8 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
             AE
           </div>
           <span className="font-semibold tracking-tight">AEO Platform</span>
         </div>
-        
+
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
             const isActive = location === item.href;
@@ -46,7 +61,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
-                  data-testid={`nav-${item.label.toLowerCase()}`}
+                  data-testid={`nav-${item.label.toLowerCase().replace(" ", "-")}`}
                 >
                   <item.icon className="w-4 h-4" />
                   <span className="font-medium text-sm">{item.label}</span>
@@ -70,7 +85,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="font-medium text-sm">Settings</span>
             </div>
           </Link>
-          <div className="mt-4 flex items-center gap-3 px-3 py-2">
+
+          <ThemeToggle />
+
+          <div className="mt-2 flex items-center gap-3 px-3 py-2">
             <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-md" } }} />
             <div className="flex flex-col flex-1 overflow-hidden">
               <span className="text-sm font-medium truncate">{business?.ownerName || "User"}</span>
