@@ -231,6 +231,25 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-dashed border-2 border-primary/20 bg-primary/5">
+        <CardContent className="flex items-center justify-between p-6">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <Plus className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold">Add Another Business</p>
+              <p className="text-sm text-muted-foreground">Track a second location or brand under the same account</p>
+            </div>
+          </div>
+          <Link href="/onboarding?new=1">
+            <Button variant="outline" className="shrink-0" data-testid="button-add-business-card">
+              Get Started <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
     </div>
   );
 }
