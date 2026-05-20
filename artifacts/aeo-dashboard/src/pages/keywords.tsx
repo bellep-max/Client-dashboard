@@ -372,7 +372,11 @@ function KeywordLinksPanel({ keywordId, keywordText }: { keywordId: number; keyw
         <p className="text-sm text-muted-foreground text-center py-3">No links added yet. Add a link to get AI longevity analysis.</p>
       ) : (
         <div className="space-y-2">
-          {links?.map(link => (
+          {links?.map(link => {
+            const pct = link.aiEfficiencyPercent ?? null;
+            const pctColor = pct == null ? "text-muted-foreground" : pct >= 70 ? "text-green-500" : pct >= 50 ? "text-amber-500" : "text-destructive";
+            const barColor = pct == null ? "bg-muted" : pct >= 70 ? "bg-green-500" : pct >= 50 ? "bg-amber-500" : "bg-destructive";
+            return (
             <div key={link.id} className="border rounded-lg p-3 bg-card space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
@@ -382,15 +386,26 @@ function KeywordLinksPanel({ keywordId, keywordText }: { keywordId: number; keyw
                     </a>
                     <Badge variant="outline" className="capitalize text-xs shrink-0">{link.linkType}</Badge>
                     {link.aiLifespanDays != null && (
-                      <Badge variant="secondary" className="text-xs shrink-0">
-                        ~{link.aiLifespanDays >= 365 
-                          ? `${Math.round(link.aiLifespanDays / 365)}yr` 
-                          : `${link.aiLifespanDays}d`} effective
-                      </Badge>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        ~{link.aiLifespanDays >= 365
+                          ? `${Math.round(link.aiLifespanDays / 365)}yr`
+                          : `${link.aiLifespanDays}d`} lifespan
+                      </span>
                     )}
                   </div>
                   {link.description && (
                     <p className="text-xs text-muted-foreground mt-1">{link.description}</p>
+                  )}
+                  {pct != null && (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">AEO Efficiency</span>
+                        <span className={`text-sm font-bold ${pctColor}`}>{pct}%</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
                   )}
                   {link.aiAnalysis && (
                     <p className="text-xs text-muted-foreground mt-1 italic">{link.aiAnalysis}</p>
@@ -426,7 +441,7 @@ function KeywordLinksPanel({ keywordId, keywordText }: { keywordId: number; keyw
                 </div>
               </div>
             </div>
-          ))}
+          );})}
         </div>
       )}
     </div>

@@ -191,6 +191,7 @@ router.post("/businesses/me/keywords/links/:id/analyze", requireAuth, async (req
 
   const [updated] = await db.update(keywordLinksTable).set({
     aiLifespanDays: analysisResult.lifespanDays,
+    aiEfficiencyPercent: analysisResult.efficiencyPercent,
     aiAnalysis: analysisResult.analysis,
     analyzedAt: new Date(),
   }).where(eq(keywordLinksTable.id, params.data.id)).returning();
@@ -245,6 +246,7 @@ router.post("/businesses/me/keywords/:id/links", requireAuth, async (req: any, r
     description: parsed.data.description ?? null,
     linkType: parsed.data.linkType,
     aiLifespanDays: analysisResult.lifespanDays,
+    aiEfficiencyPercent: analysisResult.efficiencyPercent,
     aiAnalysis: analysisResult.analysis,
     analyzedAt: new Date(),
   }).returning();
@@ -292,26 +294,38 @@ router.delete("/businesses/me/keywords/:id", requireAuth, async (req: any, res):
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-async function runLinkAnalysis(url: string, linkType: string, description?: string | null): Promise<{ lifespanDays: number | null; analysis: string }> {
+async function runLinkAnalysis(url: string, linkType: string, description?: string | null): Promise<{ lifespanDays: number | null; efficiencyPercent: number | null; analysis: string }> {
   try {
-    const prompt = `You are an AEO (Answer Engine Optimization) expert analyzing a link for longevity and value.
+    const prompt = `You are an AEO (Answer Engine Optimization) expert. Analyze this link for its long-term value in helping a business rank in AI answer engines (ChatGPT, Gemini, Perplexity).
 
 URL: ${url}
 Link Type: ${linkType}
 Description: ${description || "No description provided"}
 
-Estimate how long this link will remain effective for AEO purposes.
+You must give TWO honest scores:
 
-Consider the content type (evergreen vs time-sensitive), domain stability, and the link type (${linkType}).
-Examples: a news article might last 30-90 days, an evergreen blog post 365+ days, a directory listing 730+ days, a social profile indefinitely.
+1. efficiencyPercent (0–100): How effective is this link for AEO overall?
+   - 90–100: Authoritative, evergreen, highly relevant, trust-building domain
+   - 70–89: Good quality, stable, relevant content
+   - 50–69: Moderate quality or relevance
+   - 30–49: Weak relevance, unstable, or thin content
+   - 0–29: Unlikely to help AEO (spammy, irrelevant, very short-lived)
+   Be truthful. Short links (e.g. goo.gl, bit.ly), low-quality blogs, or temporary pages should score low.
 
-Return a JSON object:
+2. lifespanDays (integer): How many days will this link remain effective?
+   - News article: 30–90 days
+   - Blog post (evergreen): 365–730 days
+   - Directory listing: 730–1825 days
+   - Social profile: 365+ days
+   - Short/redirect link: 30–60 days
+   Be realistic.
+
+Return ONLY valid JSON:
 {
+  "efficiencyPercent": 72,
   "lifespanDays": 365,
-  "analysis": "Brief 1-2 sentence analysis of why this link will remain effective for this duration."
-}
-
-Where lifespanDays is your best estimate (integer). Return only valid JSON.`;
+  "analysis": "One honest sentence explaining both scores and why."
+}`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-5.4",
@@ -323,10 +337,11 @@ Where lifespanDays is your best estimate (integer). Return only valid JSON.`;
     const parsed = JSON.parse(content);
     return {
       lifespanDays: typeof parsed.lifespanDays === "number" ? parsed.lifespanDays : null,
+      efficiencyPercent: typeof parsed.efficiencyPercent === "number" ? Math.min(100, Math.max(0, Math.round(parsed.efficiencyPercent))) : null,
       analysis: typeof parsed.analysis === "string" ? parsed.analysis : "Analysis not available.",
     };
   } catch {
-    return { lifespanDays: null, analysis: "Analysis could not be completed." };
+    return { lifespanDays: null, efficiencyPercent: null, analysis: "Analysis could not be completed." };
   }
 }
 

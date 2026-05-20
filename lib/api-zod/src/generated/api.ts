@@ -329,6 +329,10 @@ export const ListKeywordLinksResponseItem = zod.object({
   description: zod.string().nullish(),
   linkType: zod.string(),
   aiLifespanDays: zod.number().nullish(),
+  aiEfficiencyPercent: zod
+    .number()
+    .nullish()
+    .describe("AI-assessed link efficiency for AEO, 0–100"),
   aiAnalysis: zod.string().nullish(),
   analyzedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),
@@ -379,6 +383,10 @@ export const AnalyzeKeywordLinkResponse = zod.object({
   description: zod.string().nullish(),
   linkType: zod.string(),
   aiLifespanDays: zod.number().nullish(),
+  aiEfficiencyPercent: zod
+    .number()
+    .nullish()
+    .describe("AI-assessed link efficiency for AEO, 0–100"),
   aiAnalysis: zod.string().nullish(),
   analyzedAt: zod.coerce.date().nullish(),
   createdAt: zod.coerce.date(),

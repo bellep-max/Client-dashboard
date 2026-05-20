@@ -16,6 +16,11 @@ export interface KeywordLink {
   linkType: string;
   /** @nullable */
   aiLifespanDays?: number | null;
+  /**
+   * AI-assessed link efficiency for AEO, 0–100
+   * @nullable
+   */
+  aiEfficiencyPercent?: number | null;
   /** @nullable */
   aiAnalysis?: string | null;
   /** @nullable */

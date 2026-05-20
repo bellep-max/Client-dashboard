@@ -78,6 +78,7 @@ export const keywordLinksTable = pgTable("keyword_links", {
   description: text("description"),
   linkType: text("link_type").notNull().default("other"),
   aiLifespanDays: integer("ai_lifespan_days"),
+  aiEfficiencyPercent: integer("ai_efficiency_percent"),
   aiAnalysis: text("ai_analysis"),
   analyzedAt: timestamp("analyzed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

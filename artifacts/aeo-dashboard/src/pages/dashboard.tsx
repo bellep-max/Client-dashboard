@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, Key, TrendingUp, ShieldCheck, AlertCircle, FileText, ArrowRight } from "lucide-react";
+import { BarChart3, Key, TrendingUp, ShieldCheck, AlertCircle, FileText, ArrowRight, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -92,9 +92,16 @@ export default function DashboardPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <Button onClick={handleGenerateReport} disabled={generateReport.isPending} data-testid="button-generate-report">
-          {generateReport.isPending ? "Generating..." : "Generate Report"}
-        </Button>
+        <div className="flex gap-3">
+          <Link href="/onboarding?new=1">
+            <Button variant="outline" data-testid="button-add-business">
+              <Plus className="w-4 h-4 mr-2" /> Add Business
+            </Button>
+          </Link>
+          <Button onClick={handleGenerateReport} disabled={generateReport.isPending} data-testid="button-generate-report">
+            {generateReport.isPending ? "Generating..." : "Generate Report"}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

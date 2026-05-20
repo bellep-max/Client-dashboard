@@ -953,6 +953,9 @@ components:
           type: string
         aiLifespanDays:
           type: ["integer", "null"]
+        aiEfficiencyPercent:
+          type: ["integer", "null"]
+          description: "AI-assessed link efficiency for AEO, 0–100"
         aiAnalysis:
           type: ["string", "null"]
         analyzedAt:
