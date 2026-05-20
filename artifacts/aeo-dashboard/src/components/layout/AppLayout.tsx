@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Link, useLocation } from "wouter";
 import { UserButton } from "@clerk/react";
 import { LayoutDashboard, Key, BarChart3, Bot, Settings, Sun, Moon } from "lucide-react";
@@ -21,16 +21,8 @@ function ThemeToggle() {
 }
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const [location, setLocation] = useLocation();
-  const { data: business, isLoading } = useGetMyBusiness();
-
-  useEffect(() => {
-    if (!isLoading && business && !business.onboardingComplete && location !== "/onboarding") {
-      setLocation("/onboarding");
-    } else if (!isLoading && !business && location !== "/onboarding") {
-      setLocation("/onboarding");
-    }
-  }, [business, isLoading, location, setLocation]);
+  const [location] = useLocation();
+  const { data: business } = useGetMyBusiness();
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -41,13 +33,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
-      {/* Sidebar */}
       <aside className="w-full md:w-64 border-r border-border bg-card flex flex-col shrink-0">
         <div className="p-6 border-b border-border flex items-center gap-3">
           <div className="w-8 h-8 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
             AE
           </div>
-          <span className="font-semibold tracking-tight">AEO Platform</span>
+          <div className="flex-1 overflow-hidden">
+            <span className="font-semibold tracking-tight block truncate">AEO Platform</span>
+            {business && (
+              <span className="text-xs text-muted-foreground truncate block">{business.businessName}</span>
+            )}
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -92,13 +88,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-md" } }} />
             <div className="flex flex-col flex-1 overflow-hidden">
               <span className="text-sm font-medium truncate">{business?.ownerName || "User"}</span>
-              <span className="text-xs text-muted-foreground truncate">{business?.businessName || "No Business"}</span>
+              <span className="text-xs text-muted-foreground truncate">{business?.businessName || "No business yet"}</span>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {children}
       </main>

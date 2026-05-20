@@ -16,8 +16,12 @@ function requireAuth(req: any, res: any, next: any) {
 }
 
 async function getBusinessForUser(userId: string) {
-  const [business] = await db.select().from(businessesTable).where(eq(businessesTable.userId, userId));
-  return business ?? null;
+  const businesses = await db
+    .select()
+    .from(businessesTable)
+    .where(eq(businessesTable.userId, userId))
+    .orderBy(desc(businessesTable.isActive), desc(businessesTable.createdAt));
+  return businesses[0] ?? null;
 }
 
 function parseTopKeywords(json: string) {

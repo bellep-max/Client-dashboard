@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, Key, TrendingUp, ShieldCheck, AlertCircle, FileText } from "lucide-react";
+import { BarChart3, Key, TrendingUp, ShieldCheck, AlertCircle, FileText, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { Link } from "wouter";
 
 export default function DashboardPage() {
-  const { data: summary, isLoading } = useGetDashboardSummary();
+  const { data: summary, isLoading, isError } = useGetDashboardSummary();
   const queryClient = useQueryClient();
   const generateReport = useGenerateReport();
 
@@ -44,15 +45,48 @@ export default function DashboardPage() {
             </Card>
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Skeleton className="h-[400px] lg:col-span-2" />
-          <Skeleton className="h-[400px]" />
-        </div>
       </div>
     );
   }
 
-  if (!summary) return null;
+  if (isError || !summary) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[60vh]">
+        <Card className="max-w-lg w-full border-primary/20">
+          <CardHeader className="text-center pb-4">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="w-8 h-8 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Set up your first business</CardTitle>
+            <CardDescription className="text-base mt-2">
+              Add your business profile to start tracking your visibility in AI answer engines like ChatGPT, Gemini, and Perplexity.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-3 gap-3 text-center py-4">
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-primary">1</div>
+                <div className="text-xs text-muted-foreground">Add your business profile</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-primary">2</div>
+                <div className="text-xs text-muted-foreground">Connect your digital assets</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-primary">3</div>
+                <div className="text-xs text-muted-foreground">Track AI visibility</div>
+              </div>
+            </div>
+            <Link href="/onboarding">
+              <Button className="w-full" size="lg" data-testid="button-start-onboarding">
+                Get Started <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -71,9 +105,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.visibilityScore ?? "N/A"}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Based on keyword positions
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Based on keyword positions</p>
           </CardContent>
         </Card>
         <Card>
@@ -83,9 +115,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.activeKeywords}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Out of {summary.totalKeywords} total
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Out of {summary.totalKeywords} total</p>
           </CardContent>
         </Card>
         <Card>
@@ -95,9 +125,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.averageEfficiencyScore?.toFixed(1) ?? "N/A"}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Score out of 10
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Score out of 10</p>
           </CardContent>
         </Card>
         <Card>
@@ -111,9 +139,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary.gbpVerified ? "Verified" : "Action Needed"}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {summary.totalWebsites} connected websites
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{summary.totalWebsites} connected websites</p>
           </CardContent>
         </Card>
       </div>

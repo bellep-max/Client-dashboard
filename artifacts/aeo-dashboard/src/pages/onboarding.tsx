@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -48,6 +48,9 @@ const websiteSchema = z.object({
 export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  const isNewBusiness = new URLSearchParams(search).get("new") === "1";
+
   const { data: business, isLoading: isBusinessLoading } = useGetMyBusiness();
   const createBusiness = useCreateBusiness();
   const updateBusiness = useUpdateBusiness();
@@ -91,17 +94,17 @@ export default function OnboardingPage() {
   });
 
   useEffect(() => {
+    if (isNewBusiness) return;
     if (!isBusinessLoading && business && business.onboardingComplete) {
       setLocation("/dashboard");
     } else if (business && step === 1) {
-      // If business exists but onboarding not complete, move to step 2 automatically if we just loaded
       setStep(2);
     }
-  }, [business, isBusinessLoading, setLocation, step]);
+  }, [business, isBusinessLoading, setLocation, step, isNewBusiness]);
 
   const onBusinessSubmit = async (data: z.infer<typeof businessSchema>) => {
     try {
-      if (!business) {
+      if (!business || isNewBusiness) {
         await createBusiness.mutateAsync({ data });
       } else {
         await updateBusiness.mutateAsync({ data });
@@ -136,7 +139,6 @@ export default function OnboardingPage() {
     try {
       await addWebsite.mutateAsync({ data });
       toast.success("Website added successfully");
-      // Generate keywords for the next step automatically
       generateKeywords.mutate(undefined, {
         onSuccess: (res) => {
           setGeneratedKeywords(res.map((k: any) => ({ ...k, selected: true })));
@@ -167,7 +169,6 @@ export default function OnboardingPage() {
 
   const completeOnboarding = async () => {
     try {
-      // Add selected keywords
       const selectedKws = generatedKeywords.filter(k => k.selected);
       for (const kw of selectedKws) {
         if (kw.efficiencyScore < 6) {
@@ -178,7 +179,6 @@ export default function OnboardingPage() {
         });
       }
       
-      // Mark complete
       await updateBusiness.mutateAsync({
         data: { onboardingComplete: true }
       });
@@ -203,6 +203,12 @@ export default function OnboardingPage() {
           </div>
           <span className="font-bold tracking-tight text-2xl">AEO Platform</span>
         </div>
+
+        {isNewBusiness && (
+          <div className="text-center mb-4">
+            <Badge variant="outline" className="text-primary border-primary">Adding a new business</Badge>
+          </div>
+        )}
 
         <div className="flex items-center justify-between mb-8 relative">
           <div className="absolute left-0 top-1/2 w-full h-0.5 bg-border -z-10 transform -translate-y-1/2"></div>
@@ -263,8 +269,13 @@ export default function OnboardingPage() {
                     </FormItem>
                   )} />
                 </CardContent>
-                <CardFooter className="flex justify-end">
-                  <Button type="submit" disabled={createBusiness.isPending || updateBusiness.isPending} data-testid="button-next-step1">
+                <CardFooter className="flex justify-between">
+                  {isNewBusiness && (
+                    <Button variant="ghost" type="button" onClick={() => setLocation("/settings")}>
+                      <ArrowLeft className="w-4 h-4 mr-2" /> Cancel
+                    </Button>
+                  )}
+                  <Button type="submit" disabled={createBusiness.isPending || updateBusiness.isPending} className={isNewBusiness ? "" : "ml-auto"} data-testid="button-next-step1">
                     Next Step <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </CardFooter>

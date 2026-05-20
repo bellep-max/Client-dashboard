@@ -19,6 +19,47 @@ tags:
   - name: openai
     description: OpenAI AI chat operations
 paths:
+  # ─── Multi-Business ───────────────────────────────────────────────────────────
+  /businesses:
+    get:
+      operationId: listBusinesses
+      tags: [business]
+      summary: List all businesses for the current user
+      responses:
+        "200":
+          description: All businesses for the user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Business"
+
+  /businesses/switch:
+    post:
+      operationId: switchBusiness
+      tags: [business]
+      summary: Switch the active business
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SwitchBusinessInput"
+      responses:
+        "200":
+          description: Switched to business
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Business"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
   /healthz:
     get:
       operationId: healthCheck
@@ -291,6 +332,84 @@ paths:
                 items:
                   $ref: "#/components/schemas/KeywordSuggestion"
 
+  /businesses/me/keywords/{id}/links:
+    get:
+      operationId: listKeywordLinks
+      tags: [keywords]
+      summary: List links attached to a keyword
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Keyword links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KeywordLink"
+    post:
+      operationId: addKeywordLink
+      tags: [keywords]
+      summary: Add a link to a keyword (triggers AI analysis)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KeywordLinkInput"
+      responses:
+        "201":
+          description: Created link with AI analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeywordLink"
+
+  /businesses/me/keywords/links/{id}:
+    delete:
+      operationId: deleteKeywordLink
+      tags: [keywords]
+      summary: Remove a keyword link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /businesses/me/keywords/links/{id}/analyze:
+    post:
+      operationId: analyzeKeywordLink
+      tags: [keywords]
+      summary: Re-run AI analysis on a keyword link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated link with fresh AI analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeywordLink"
+
   /businesses/me/keywords/{id}:
     patch:
       operationId: updateKeyword
@@ -558,6 +677,8 @@ components:
         updatedAt:
           type: string
           format: date-time
+        isActive:
+          type: boolean
       required:
         - id
         - userId
@@ -565,6 +686,7 @@ components:
         - ownerName
         - subscriberName
         - onboardingComplete
+        - isActive
         - createdAt
         - updatedAt
 
@@ -805,6 +927,61 @@ components:
         - keyword
         - reason
         - efficiencyScore
+
+    SwitchBusinessInput:
+      type: object
+      properties:
+        businessId:
+          type: integer
+      required:
+        - businessId
+
+    KeywordLink:
+      type: object
+      properties:
+        id:
+          type: integer
+        keywordId:
+          type: integer
+        businessId:
+          type: integer
+        url:
+          type: string
+        description:
+          type: ["string", "null"]
+        linkType:
+          type: string
+        aiLifespanDays:
+          type: ["integer", "null"]
+        aiAnalysis:
+          type: ["string", "null"]
+        analyzedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - keywordId
+        - businessId
+        - url
+        - linkType
+        - createdAt
+
+    KeywordLinkInput:
+      type: object
+      properties:
+        url:
+          type: string
+        description:
+          type: string
+        linkType:
+          type: string
+          enum: [backlink, blog, newsletter, news, social, directory, citation, other]
+      required:
+        - url
+        - linkType
 
     # ─── Reports ─────────────────────────────────────────────────────────────────
     Report:

@@ -26,6 +26,7 @@ export interface Business {
   onboardingComplete: boolean;
   createdAt: string;
   updatedAt: string;
+  isActive: boolean;
 }
 
 export interface BusinessInput {
@@ -202,6 +203,47 @@ export interface KeywordSuggestion {
   /** @nullable */
   estimatedVolume?: number | null;
   efficiencyScore: number;
+}
+
+export interface SwitchBusinessInput {
+  businessId: number;
+}
+
+export interface KeywordLink {
+  id: number;
+  keywordId: number;
+  businessId: number;
+  url: string;
+  /** @nullable */
+  description?: string | null;
+  linkType: string;
+  /** @nullable */
+  aiLifespanDays?: number | null;
+  /** @nullable */
+  aiAnalysis?: string | null;
+  /** @nullable */
+  analyzedAt?: string | null;
+  createdAt: string;
+}
+
+export type KeywordLinkInputLinkType =
+  (typeof KeywordLinkInputLinkType)[keyof typeof KeywordLinkInputLinkType];
+
+export const KeywordLinkInputLinkType = {
+  backlink: "backlink",
+  blog: "blog",
+  newsletter: "newsletter",
+  news: "news",
+  social: "social",
+  directory: "directory",
+  citation: "citation",
+  other: "other",
+} as const;
+
+export interface KeywordLinkInput {
+  url: string;
+  description?: string;
+  linkType: KeywordLinkInputLinkType;
 }
 
 export interface ReportKeyword {

@@ -4,13 +4,14 @@ import { z } from "zod/v4";
 
 export const businessesTable = pgTable("businesses", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").notNull().unique(),
+  userId: text("user_id").notNull(),
   businessName: text("business_name").notNull(),
   ownerName: text("owner_name").notNull(),
   subscriberName: text("subscriber_name").notNull(),
   industry: text("industry"),
   description: text("description"),
   onboardingComplete: boolean("onboarding_complete").notNull().default(false),
+  isActive: boolean("is_active").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -68,6 +69,23 @@ export const keywordsTable = pgTable("keywords", {
 export const insertKeywordSchema = createInsertSchema(keywordsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertKeyword = z.infer<typeof insertKeywordSchema>;
 export type Keyword = typeof keywordsTable.$inferSelect;
+
+export const keywordLinksTable = pgTable("keyword_links", {
+  id: serial("id").primaryKey(),
+  keywordId: integer("keyword_id").notNull().references(() => keywordsTable.id, { onDelete: "cascade" }),
+  businessId: integer("business_id").notNull().references(() => businessesTable.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  description: text("description"),
+  linkType: text("link_type").notNull().default("other"),
+  aiLifespanDays: integer("ai_lifespan_days"),
+  aiAnalysis: text("ai_analysis"),
+  analyzedAt: timestamp("analyzed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertKeywordLinkSchema = createInsertSchema(keywordLinksTable).omit({ id: true, createdAt: true });
+export type InsertKeywordLink = z.infer<typeof insertKeywordLinkSchema>;
+export type KeywordLink = typeof keywordLinksTable.$inferSelect;
 
 export const reportsTable = pgTable("reports", {
   id: serial("id").primaryKey(),

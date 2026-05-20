@@ -3,14 +3,19 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { 
-  useGetMyBusiness, 
+  useGetMyBusiness,
+  useListBusinesses,
+  useSwitchBusiness,
   useUpdateBusiness,
   useListGbpProfiles,
   useListWebsites,
   useDeleteGbpProfile,
-  useDeleteWebsite
+  useDeleteWebsite,
+  getGetMyBusinessQueryKey,
+  getListBusinessesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Trash2, Building, Globe, CreditCard } from "lucide-react";
+import { Loader2, Trash2, Building, Globe, Plus, Check } from "lucide-react";
 
 const businessSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
@@ -31,11 +36,14 @@ const businessSchema = z.object({
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const { data: business, isLoading: isBusinessLoading } = useGetMyBusiness();
+  const { data: allBusinesses, isLoading: isAllBusinessesLoading } = useListBusinesses();
   const { data: gbps, isLoading: isGbpLoading } = useListGbpProfiles();
   const { data: websites, isLoading: isWebsitesLoading } = useListWebsites();
   
   const updateBusiness = useUpdateBusiness();
+  const switchBusiness = useSwitchBusiness();
   const deleteGbp = useDeleteGbpProfile();
   const deleteWebsite = useDeleteWebsite();
 
@@ -66,9 +74,20 @@ export default function SettingsPage() {
     updateBusiness.mutate({ data }, {
       onSuccess: () => {
         toast.success("Settings saved successfully");
-        queryClient.invalidateQueries({ queryKey: ["/api/businesses/me"] });
+        queryClient.invalidateQueries({ queryKey: getGetMyBusinessQueryKey() });
       },
       onError: () => toast.error("Failed to save settings")
+    });
+  };
+
+  const handleSwitch = (businessId: number) => {
+    switchBusiness.mutate({ data: { businessId } }, {
+      onSuccess: () => {
+        toast.success("Switched active business");
+        queryClient.invalidateQueries({ queryKey: getGetMyBusinessQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListBusinessesQueryKey() });
+      },
+      onError: () => toast.error("Failed to switch business")
     });
   };
 
@@ -102,61 +121,116 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-8">
-        {/* Business Profile */}
+
+        {/* Businesses */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Building className="w-5 h-5" /> Business Profile</CardTitle>
-            <CardDescription>Update your core business information used by the AI agent.</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2"><Building className="w-5 h-5" /> Businesses</CardTitle>
+                <CardDescription>Manage all your business profiles. Switch which one is currently active.</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setLocation("/onboarding?new=1")} data-testid="button-add-business">
+                <Plus className="w-4 h-4 mr-2" /> Add Business
+              </Button>
+            </div>
           </CardHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <CardContent className="space-y-4">
-                <FormField control={form.control} name="businessName" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Business Name</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-settings-business" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="ownerName" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Owner Name</FormLabel>
-                      <FormControl><Input {...field} data-testid="input-settings-owner" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="subscriberName" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subscriber Name</FormLabel>
-                      <FormControl><Input {...field} data-testid="input-settings-subscriber" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-                <FormField control={form.control} name="industry" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Industry</FormLabel>
-                    <FormControl><Input {...field} data-testid="input-settings-industry" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="description" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Business Description</FormLabel>
-                    <FormControl><Textarea {...field} rows={4} data-testid="input-settings-description" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </CardContent>
-              <CardFooter>
-                <Button type="submit" disabled={updateBusiness.isPending} data-testid="button-save-settings">
-                  {updateBusiness.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </CardFooter>
-            </form>
-          </Form>
+          <CardContent>
+            {isAllBusinessesLoading ? (
+              <div className="flex justify-center py-6"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+            ) : (
+              <div className="space-y-3">
+                {allBusinesses?.map(biz => (
+                  <div key={biz.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${biz.isActive ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    <div className="flex items-center gap-3">
+                      {biz.isActive && <Check className="w-4 h-4 text-primary shrink-0" />}
+                      <div>
+                        <div className="font-medium text-sm">{biz.businessName}</div>
+                        <div className="text-xs text-muted-foreground">{biz.industry || "No industry set"}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {biz.isActive ? (
+                        <Badge>Active</Badge>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSwitch(biz.id)}
+                          disabled={switchBusiness.isPending}
+                          data-testid={`button-switch-business-${biz.id}`}
+                        >
+                          Switch
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {!allBusinesses?.length && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No businesses set up yet.</p>
+                )}
+              </div>
+            )}
+          </CardContent>
         </Card>
+
+        {/* Business Profile Edit */}
+        {business && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Edit Active Business</CardTitle>
+              <CardDescription>Update the profile for <span className="font-medium text-foreground">{business.businessName}</span>.</CardDescription>
+            </CardHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <CardContent className="space-y-4">
+                  <FormField control={form.control} name="businessName" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Name</FormLabel>
+                      <FormControl><Input {...field} data-testid="input-settings-business" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="ownerName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Owner Name</FormLabel>
+                        <FormControl><Input {...field} data-testid="input-settings-owner" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="subscriberName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subscriber Name</FormLabel>
+                        <FormControl><Input {...field} data-testid="input-settings-subscriber" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                  <FormField control={form.control} name="industry" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry</FormLabel>
+                      <FormControl><Input {...field} data-testid="input-settings-industry" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="description" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Description</FormLabel>
+                      <FormControl><Textarea {...field} rows={4} data-testid="input-settings-description" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit" disabled={updateBusiness.isPending} data-testid="button-save-settings">
+                    {updateBusiness.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </CardFooter>
+              </form>
+            </Form>
+          </Card>
+        )}
 
         {/* Connected Assets */}
         <Card>
@@ -165,7 +239,6 @@ export default function SettingsPage() {
             <CardDescription>Manage your Google Business Profiles and digital footprint links.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            
             <div>
               <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">Google Business Profiles</h3>
               <div className="border rounded-md">
@@ -232,24 +305,6 @@ export default function SettingsPage() {
                   </TableBody>
                 </Table>
               </div>
-            </div>
-
-          </CardContent>
-        </Card>
-
-        {/* Subscription Placeholder */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5" /> Subscription</CardTitle>
-            <CardDescription>Manage your AEO Platform billing and usage.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="p-4 bg-muted rounded-lg border flex items-center justify-between">
-              <div>
-                <h4 className="font-semibold">Pro Plan (Active)</h4>
-                <p className="text-sm text-muted-foreground">Billed monthly. Next charge on Oct 1, 2024.</p>
-              </div>
-              <Badge>Active</Badge>
             </div>
           </CardContent>
         </Card>

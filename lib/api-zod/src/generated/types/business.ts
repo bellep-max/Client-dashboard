@@ -19,4 +19,5 @@ export interface Business {
   onboardingComplete: boolean;
   createdAt: Date;
   updatedAt: Date;
+  isActive: boolean;
 }

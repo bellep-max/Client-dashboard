@@ -8,6 +8,45 @@
 import * as zod from "zod";
 
 /**
+ * @summary List all businesses for the current user
+ */
+export const ListBusinessesResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  businessName: zod.string(),
+  ownerName: zod.string(),
+  subscriberName: zod.string(),
+  industry: zod.string().nullish(),
+  description: zod.string().nullish(),
+  onboardingComplete: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  isActive: zod.boolean(),
+});
+export const ListBusinessesResponse = zod.array(ListBusinessesResponseItem);
+
+/**
+ * @summary Switch the active business
+ */
+export const SwitchBusinessBody = zod.object({
+  businessId: zod.number(),
+});
+
+export const SwitchBusinessResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  businessName: zod.string(),
+  ownerName: zod.string(),
+  subscriberName: zod.string(),
+  industry: zod.string().nullish(),
+  description: zod.string().nullish(),
+  onboardingComplete: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  isActive: zod.boolean(),
+});
+
+/**
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -28,6 +67,7 @@ export const GetMyBusinessResponse = zod.object({
   onboardingComplete: zod.boolean(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
+  isActive: zod.boolean(),
 });
 
 /**
@@ -64,6 +104,7 @@ export const UpdateBusinessResponse = zod.object({
   onboardingComplete: zod.boolean(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
+  isActive: zod.boolean(),
 });
 
 /**
@@ -272,6 +313,76 @@ export const GetKeywordSuggestionsResponseItem = zod.object({
 export const GetKeywordSuggestionsResponse = zod.array(
   GetKeywordSuggestionsResponseItem,
 );
+
+/**
+ * @summary List links attached to a keyword
+ */
+export const ListKeywordLinksParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListKeywordLinksResponseItem = zod.object({
+  id: zod.number(),
+  keywordId: zod.number(),
+  businessId: zod.number(),
+  url: zod.string(),
+  description: zod.string().nullish(),
+  linkType: zod.string(),
+  aiLifespanDays: zod.number().nullish(),
+  aiAnalysis: zod.string().nullish(),
+  analyzedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListKeywordLinksResponse = zod.array(ListKeywordLinksResponseItem);
+
+/**
+ * @summary Add a link to a keyword (triggers AI analysis)
+ */
+export const AddKeywordLinkParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AddKeywordLinkBody = zod.object({
+  url: zod.string(),
+  description: zod.string().optional(),
+  linkType: zod.enum([
+    "backlink",
+    "blog",
+    "newsletter",
+    "news",
+    "social",
+    "directory",
+    "citation",
+    "other",
+  ]),
+});
+
+/**
+ * @summary Remove a keyword link
+ */
+export const DeleteKeywordLinkParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Re-run AI analysis on a keyword link
+ */
+export const AnalyzeKeywordLinkParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AnalyzeKeywordLinkResponse = zod.object({
+  id: zod.number(),
+  keywordId: zod.number(),
+  businessId: zod.number(),
+  url: zod.string(),
+  description: zod.string().nullish(),
+  linkType: zod.string(),
+  aiLifespanDays: zod.number().nullish(),
+  aiAnalysis: zod.string().nullish(),
+  analyzedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
 
 /**
  * @summary Update a keyword (edit text, notes)

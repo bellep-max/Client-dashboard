@@ -28,6 +28,8 @@ import type {
   HealthStatus,
   Keyword,
   KeywordInput,
+  KeywordLink,
+  KeywordLinkInput,
   KeywordSuggestion,
   KeywordUpdate,
   OpenaiConversation,
@@ -37,6 +39,7 @@ import type {
   OpenaiMessage,
   OpenaiMessageInput,
   Report,
+  SwitchBusinessInput,
   Website,
   WebsiteInput,
   WebsiteUpdate,
@@ -50,6 +53,167 @@ type AwaitedInput<T> = PromiseLike<T> | T;
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary List all businesses for the current user
+ */
+export const getListBusinessesUrl = () => {
+  return `/api/businesses`;
+};
+
+export const listBusinesses = async (
+  options?: RequestInit,
+): Promise<Business[]> => {
+  return customFetch<Business[]>(getListBusinessesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBusinessesQueryKey = () => {
+  return [`/api/businesses`] as const;
+};
+
+export const getListBusinessesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBusinesses>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBusinesses>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBusinessesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listBusinesses>>> = ({
+    signal,
+  }) => listBusinesses({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBusinesses>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBusinessesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBusinesses>>
+>;
+export type ListBusinessesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all businesses for the current user
+ */
+
+export function useListBusinesses<
+  TData = Awaited<ReturnType<typeof listBusinesses>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBusinesses>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBusinessesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Switch the active business
+ */
+export const getSwitchBusinessUrl = () => {
+  return `/api/businesses/switch`;
+};
+
+export const switchBusiness = async (
+  switchBusinessInput: SwitchBusinessInput,
+  options?: RequestInit,
+): Promise<Business> => {
+  return customFetch<Business>(getSwitchBusinessUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(switchBusinessInput),
+  });
+};
+
+export const getSwitchBusinessMutationOptions = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof switchBusiness>>,
+    TError,
+    { data: BodyType<SwitchBusinessInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof switchBusiness>>,
+  TError,
+  { data: BodyType<SwitchBusinessInput> },
+  TContext
+> => {
+  const mutationKey = ["switchBusiness"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof switchBusiness>>,
+    { data: BodyType<SwitchBusinessInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return switchBusiness(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SwitchBusinessMutationResult = NonNullable<
+  Awaited<ReturnType<typeof switchBusiness>>
+>;
+export type SwitchBusinessMutationBody = BodyType<SwitchBusinessInput>;
+export type SwitchBusinessMutationError = ErrorType<ApiError>;
+
+/**
+ * @summary Switch the active business
+ */
+export const useSwitchBusiness = <
+  TError = ErrorType<ApiError>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof switchBusiness>>,
+    TError,
+    { data: BodyType<SwitchBusinessInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof switchBusiness>>,
+  TError,
+  { data: BodyType<SwitchBusinessInput> },
+  TContext
+> => {
+  return useMutation(getSwitchBusinessMutationOptions(options));
+};
 
 /**
  * @summary Health check
@@ -1353,6 +1517,348 @@ export function useGetKeywordSuggestions<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List links attached to a keyword
+ */
+export const getListKeywordLinksUrl = (id: number) => {
+  return `/api/businesses/me/keywords/${id}/links`;
+};
+
+export const listKeywordLinks = async (
+  id: number,
+  options?: RequestInit,
+): Promise<KeywordLink[]> => {
+  return customFetch<KeywordLink[]>(getListKeywordLinksUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListKeywordLinksQueryKey = (id: number) => {
+  return [`/api/businesses/me/keywords/${id}/links`] as const;
+};
+
+export const getListKeywordLinksQueryOptions = <
+  TData = Awaited<ReturnType<typeof listKeywordLinks>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listKeywordLinks>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListKeywordLinksQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listKeywordLinks>>
+  > = ({ signal }) => listKeywordLinks(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listKeywordLinks>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListKeywordLinksQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listKeywordLinks>>
+>;
+export type ListKeywordLinksQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List links attached to a keyword
+ */
+
+export function useListKeywordLinks<
+  TData = Awaited<ReturnType<typeof listKeywordLinks>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listKeywordLinks>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListKeywordLinksQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add a link to a keyword (triggers AI analysis)
+ */
+export const getAddKeywordLinkUrl = (id: number) => {
+  return `/api/businesses/me/keywords/${id}/links`;
+};
+
+export const addKeywordLink = async (
+  id: number,
+  keywordLinkInput: KeywordLinkInput,
+  options?: RequestInit,
+): Promise<KeywordLink> => {
+  return customFetch<KeywordLink>(getAddKeywordLinkUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(keywordLinkInput),
+  });
+};
+
+export const getAddKeywordLinkMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addKeywordLink>>,
+    TError,
+    { id: number; data: BodyType<KeywordLinkInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addKeywordLink>>,
+  TError,
+  { id: number; data: BodyType<KeywordLinkInput> },
+  TContext
+> => {
+  const mutationKey = ["addKeywordLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addKeywordLink>>,
+    { id: number; data: BodyType<KeywordLinkInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return addKeywordLink(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddKeywordLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addKeywordLink>>
+>;
+export type AddKeywordLinkMutationBody = BodyType<KeywordLinkInput>;
+export type AddKeywordLinkMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add a link to a keyword (triggers AI analysis)
+ */
+export const useAddKeywordLink = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addKeywordLink>>,
+    TError,
+    { id: number; data: BodyType<KeywordLinkInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addKeywordLink>>,
+  TError,
+  { id: number; data: BodyType<KeywordLinkInput> },
+  TContext
+> => {
+  return useMutation(getAddKeywordLinkMutationOptions(options));
+};
+
+/**
+ * @summary Remove a keyword link
+ */
+export const getDeleteKeywordLinkUrl = (id: number) => {
+  return `/api/businesses/me/keywords/links/${id}`;
+};
+
+export const deleteKeywordLink = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteKeywordLinkUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteKeywordLinkMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteKeywordLink>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteKeywordLink>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteKeywordLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteKeywordLink>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteKeywordLink(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteKeywordLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteKeywordLink>>
+>;
+
+export type DeleteKeywordLinkMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Remove a keyword link
+ */
+export const useDeleteKeywordLink = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteKeywordLink>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteKeywordLink>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteKeywordLinkMutationOptions(options));
+};
+
+/**
+ * @summary Re-run AI analysis on a keyword link
+ */
+export const getAnalyzeKeywordLinkUrl = (id: number) => {
+  return `/api/businesses/me/keywords/links/${id}/analyze`;
+};
+
+export const analyzeKeywordLink = async (
+  id: number,
+  options?: RequestInit,
+): Promise<KeywordLink> => {
+  return customFetch<KeywordLink>(getAnalyzeKeywordLinkUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getAnalyzeKeywordLinkMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeKeywordLink>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof analyzeKeywordLink>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["analyzeKeywordLink"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof analyzeKeywordLink>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return analyzeKeywordLink(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AnalyzeKeywordLinkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeKeywordLink>>
+>;
+
+export type AnalyzeKeywordLinkMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Re-run AI analysis on a keyword link
+ */
+export const useAnalyzeKeywordLink = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeKeywordLink>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof analyzeKeywordLink>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getAnalyzeKeywordLinkMutationOptions(options));
+};
 
 /**
  * @summary Update a keyword (edit text, notes)

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, businessesTable, gbpProfilesTable, websitesTable } from "@workspace/db";
 import {
@@ -13,6 +13,7 @@ import {
   UpdateWebsiteBody,
   DeleteWebsiteParams,
   AddWebsiteBody,
+  SwitchBusinessBody,
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
 
@@ -30,12 +31,56 @@ function requireAuth(req: any, res: any, next: any) {
 }
 
 async function getBusinessForUser(userId: string) {
-  const [business] = await db
+  const businesses = await db
     .select()
     .from(businessesTable)
-    .where(eq(businessesTable.userId, userId));
-  return business ?? null;
+    .where(eq(businessesTable.userId, userId))
+    .orderBy(desc(businessesTable.isActive), desc(businessesTable.createdAt));
+  return businesses[0] ?? null;
 }
+
+// ─── Business List ─────────────────────────────────────────────────────────────
+
+router.get("/businesses", requireAuth, async (req: any, res): Promise<void> => {
+  const businesses = await db
+    .select()
+    .from(businessesTable)
+    .where(eq(businessesTable.userId, req.userId))
+    .orderBy(desc(businessesTable.isActive), desc(businessesTable.createdAt));
+  res.json(businesses);
+});
+
+router.post("/businesses/switch", requireAuth, async (req: any, res): Promise<void> => {
+  const parsed = SwitchBusinessBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const businesses = await db
+    .select()
+    .from(businessesTable)
+    .where(eq(businessesTable.userId, req.userId));
+
+  const target = businesses.find(b => b.id === parsed.data.businessId);
+  if (!target) {
+    res.status(404).json({ error: "Business not found" });
+    return;
+  }
+
+  await db
+    .update(businessesTable)
+    .set({ isActive: false, updatedAt: new Date() })
+    .where(eq(businessesTable.userId, req.userId));
+
+  const [updated] = await db
+    .update(businessesTable)
+    .set({ isActive: true, updatedAt: new Date() })
+    .where(and(eq(businessesTable.id, parsed.data.businessId), eq(businessesTable.userId, req.userId)))
+    .returning();
+
+  res.json(updated);
+});
 
 // ─── Business Profile ─────────────────────────────────────────────────────────
 
@@ -55,15 +100,14 @@ router.post("/businesses/me", requireAuth, async (req: any, res): Promise<void> 
     return;
   }
 
-  const existing = await getBusinessForUser(req.userId);
-  if (existing) {
-    res.status(409).json({ error: "Business profile already exists" });
-    return;
-  }
+  await db
+    .update(businessesTable)
+    .set({ isActive: false, updatedAt: new Date() })
+    .where(eq(businessesTable.userId, req.userId));
 
   const [business] = await db
     .insert(businessesTable)
-    .values({ ...parsed.data, userId: req.userId })
+    .values({ ...parsed.data, userId: req.userId, isActive: true })
     .returning();
 
   res.status(201).json(business);
