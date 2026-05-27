@@ -1,10 +1,10 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { UserButton, useClerk } from "@clerk/react";
-import { LayoutDashboard, Key, BarChart3, Settings, Sun, Moon, Plus, LogOut, Building2, Check } from "lucide-react";
+import { LayoutDashboard, Key, BarChart3, Settings, Sun, Moon, Plus, LogOut, Building2, Check, User } from "lucide-react";
 import { useGetMyBusiness, useListBusinesses, useSwitchBusiness } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/contexts/AuthContext";
 
 function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
@@ -27,7 +27,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: businesses } = useListBusinesses();
   const switchBusiness = useSwitchBusiness();
   const queryClient = useQueryClient();
-  const { signOut } = useClerk();
+  const { user, signOut } = useAuth();
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -39,11 +39,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (businessId === business?.id) return;
     switchBusiness.mutate(
       { data: { businessId } },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries();
-        },
-      }
+      { onSuccess: () => queryClient.invalidateQueries() }
     );
   };
 
@@ -138,13 +134,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <ThemeToggle />
 
           <div className="mt-2 flex items-center gap-3 px-3 py-2">
-            <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8 rounded-md" } }} />
+            <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center shrink-0">
+              <User className="w-4 h-4 text-muted-foreground" />
+            </div>
             <div className="flex flex-col flex-1 overflow-hidden">
-              <span className="text-sm font-medium truncate">{business?.ownerName || "User"}</span>
-              <span className="text-xs text-muted-foreground truncate">{business?.businessName || "No business yet"}</span>
+              <span className="text-sm font-medium truncate">{user?.name || business?.ownerName || "User"}</span>
+              <span className="text-xs text-muted-foreground truncate">{user?.email || business?.businessName || ""}</span>
             </div>
             <button
-              onClick={() => signOut({ redirectUrl: "/" })}
+              onClick={signOut}
               className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
               title="Sign out"
               data-testid="button-sign-out"

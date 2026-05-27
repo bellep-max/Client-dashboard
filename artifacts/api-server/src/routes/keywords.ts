@@ -1,6 +1,5 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
-import { getAuth } from "@clerk/express";
 import { db, businessesTable, keywordsTable, keywordLinksTable } from "@workspace/db";
 import {
   AddKeywordBody,
@@ -13,18 +12,10 @@ import {
   AnalyzeKeywordLinkParams,
   ListKeywordLinksParams,
 } from "@workspace/api-zod";
+import { requireAuth } from "../lib/auth";
+
 const router: IRouter = Router();
 
-function requireAuth(req: any, res: any, next: any) {
-  const auth = getAuth(req);
-  const userId = auth?.userId;
-  if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  req.userId = userId;
-  next();
-}
 
 async function getBusinessForUser(userId: string) {
   const businesses = await db

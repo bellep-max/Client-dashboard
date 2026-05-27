@@ -1,6 +1,5 @@
 import { Router, type IRouter } from "express";
 import { eq, and, desc } from "drizzle-orm";
-import { getAuth } from "@clerk/express";
 import { db, businessesTable, gbpProfilesTable, websitesTable } from "@workspace/db";
 import {
   CreateBusinessBody,
@@ -16,19 +15,9 @@ import {
   SwitchBusinessBody,
 } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
+import { requireAuth } from "../lib/auth";
 
 const router: IRouter = Router();
-
-function requireAuth(req: any, res: any, next: any) {
-  const auth = getAuth(req);
-  const userId = auth?.userId;
-  if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  req.userId = userId;
-  next();
-}
 
 async function getBusinessForUser(userId: string) {
   const businesses = await db

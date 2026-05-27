@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { SignUp, Show } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Bot, LineChart, ShieldCheck, Sun, Moon } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
@@ -297,22 +296,20 @@ export default function LandingPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
         >
-          <div className="w-full max-w-md">
-            <Show when="signed-out">
-              <SignUp
-                routing="hash"
-                signInUrl={`${basePath}/sign-in`}
-                forceRedirectUrl={`${basePath}/dashboard`}
-              />
-            </Show>
-            <Show when="signed-in">
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">You are already signed in.</p>
-                <Link href="/dashboard">
-                  <Button>Go to Dashboard</Button>
-                </Link>
-              </div>
-            </Show>
+          <div className="w-full max-w-md text-center space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Get started free</h2>
+              <p className="text-muted-foreground">Create your account and start optimizing for AI search today.</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Link href="/sign-up">
+                <Button size="lg" className="w-full text-base">Create Account</Button>
+              </Link>
+              <Link href="/sign-in">
+                <Button size="lg" variant="outline" className="w-full text-base">Sign In</Button>
+              </Link>
+            </div>
+            <p className="text-xs text-muted-foreground">No credit card required. Cancel anytime.</p>
           </div>
         </motion.div>
       </main>
