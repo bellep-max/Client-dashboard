@@ -291,30 +291,6 @@ export const AddKeywordBody = zod.object({
 });
 
 /**
- * @summary Use AI to generate keyword suggestions for the business
- */
-export const GenerateKeywordsResponseItem = zod.object({
-  keyword: zod.string(),
-  reason: zod.string(),
-  estimatedVolume: zod.number().nullish(),
-  efficiencyScore: zod.number(),
-});
-export const GenerateKeywordsResponse = zod.array(GenerateKeywordsResponseItem);
-
-/**
- * @summary Get ongoing AI-powered keyword improvement suggestions
- */
-export const GetKeywordSuggestionsResponseItem = zod.object({
-  keyword: zod.string(),
-  reason: zod.string(),
-  estimatedVolume: zod.number().nullish(),
-  efficiencyScore: zod.number(),
-});
-export const GetKeywordSuggestionsResponse = zod.array(
-  GetKeywordSuggestionsResponseItem,
-);
-
-/**
  * @summary List links attached to a keyword
  */
 export const ListKeywordLinksParams = zod.object({
@@ -546,81 +522,4 @@ export const GetDashboardSummaryResponse = zod.object({
     )
     .optional(),
   onboardingComplete: zod.boolean(),
-});
-
-/**
- * @summary List all AI agent conversations
- */
-export const ListOpenaiConversationsResponseItem = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  createdAt: zod.coerce.date(),
-});
-export const ListOpenaiConversationsResponse = zod.array(
-  ListOpenaiConversationsResponseItem,
-);
-
-/**
- * @summary Create a new AI agent conversation
- */
-export const CreateOpenaiConversationBody = zod.object({
-  title: zod.string(),
-});
-
-/**
- * @summary Get conversation with messages
- */
-export const GetOpenaiConversationParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const GetOpenaiConversationResponse = zod.object({
-  id: zod.number(),
-  title: zod.string(),
-  createdAt: zod.coerce.date(),
-  messages: zod.array(
-    zod.object({
-      id: zod.number(),
-      conversationId: zod.number(),
-      role: zod.string(),
-      content: zod.string(),
-      createdAt: zod.coerce.date(),
-    }),
-  ),
-});
-
-/**
- * @summary Delete a conversation
- */
-export const DeleteOpenaiConversationParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-/**
- * @summary List messages in a conversation
- */
-export const ListOpenaiMessagesParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const ListOpenaiMessagesResponseItem = zod.object({
-  id: zod.number(),
-  conversationId: zod.number(),
-  role: zod.string(),
-  content: zod.string(),
-  createdAt: zod.coerce.date(),
-});
-export const ListOpenaiMessagesResponse = zod.array(
-  ListOpenaiMessagesResponseItem,
-);
-
-/**
- * @summary Send a text message and receive a streaming response
- */
-export const SendOpenaiMessageParams = zod.object({
-  id: zod.coerce.number(),
-});
-
-export const SendOpenaiMessageBody = zod.object({
-  content: zod.string(),
 });

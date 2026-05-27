@@ -9,8 +9,6 @@ import {
   useUpdateBusiness,
   useAddGbpProfile,
   useAddWebsite,
-  useGenerateKeywords,
-  useAddKeyword
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, ArrowRight, ArrowLeft, Plus, Trash2, Check, AlertCircle } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Check, AlertCircle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -56,10 +54,7 @@ export default function OnboardingPage() {
   const updateBusiness = useUpdateBusiness();
   const addGbpProfile = useAddGbpProfile();
   const addWebsite = useAddWebsite();
-  const generateKeywords = useGenerateKeywords();
-  const addKeyword = useAddKeyword();
 
-  const [generatedKeywords, setGeneratedKeywords] = useState<{keyword: string, efficiencyScore: number, selected: boolean}[]>([]);
   const [showGbpWarning, setShowGbpWarning] = useState(false);
   const [pendingGbpData, setPendingGbpData] = useState<any>(null);
 
@@ -135,58 +130,23 @@ export default function OnboardingPage() {
     }
   };
 
+  const finishOnboarding = async () => {
+    try {
+      await updateBusiness.mutateAsync({ data: { onboardingComplete: true } });
+      toast.success("Setup complete!");
+      setLocation("/dashboard");
+    } catch (e) {
+      toast.error("Failed to complete setup");
+    }
+  };
+
   const onWebsiteSubmit = async (data: z.infer<typeof websiteSchema>) => {
     try {
       await addWebsite.mutateAsync({ data });
       toast.success("Website added successfully");
-      generateKeywords.mutate(undefined, {
-        onSuccess: (res) => {
-          setGeneratedKeywords(res.map((k: any) => ({ ...k, selected: true })));
-          setStep(4);
-        },
-        onError: () => {
-          toast.error("Failed to auto-generate keywords");
-          setStep(4);
-        }
-      });
+      await finishOnboarding();
     } catch (e) {
       toast.error("Failed to add website");
-    }
-  };
-
-  const skipToKeywords = () => {
-    generateKeywords.mutate(undefined, {
-      onSuccess: (res) => {
-        setGeneratedKeywords(res.map((k: any) => ({ ...k, selected: true })));
-        setStep(4);
-      },
-      onError: () => {
-        toast.error("Failed to auto-generate keywords");
-        setStep(4);
-      }
-    });
-  };
-
-  const completeOnboarding = async () => {
-    try {
-      const selectedKws = generatedKeywords.filter(k => k.selected);
-      for (const kw of selectedKws) {
-        if (kw.efficiencyScore < 6) {
-          toast.warning(`Keyword "${kw.keyword}" may have low impact`);
-        }
-        await addKeyword.mutateAsync({
-          data: { keyword: kw.keyword, isAiGenerated: true, notes: "Added during onboarding" }
-        });
-      }
-      
-      await updateBusiness.mutateAsync({
-        data: { onboardingComplete: true }
-      });
-      
-      toast.success("Onboarding complete!");
-      setLocation("/dashboard");
-    } catch (e) {
-      toast.error("Failed to complete onboarding");
     }
   };
 
@@ -212,7 +172,7 @@ export default function OnboardingPage() {
 
         <div className="flex items-center justify-between mb-8 relative">
           <div className="absolute left-0 top-1/2 w-full h-0.5 bg-border -z-10 transform -translate-y-1/2"></div>
-          {[1, 2, 3, 4].map(s => (
+          {[1, 2, 3].map(s => (
             <div key={s} className={`w-8 h-8 rounded-full flex items-center justify-center font-medium border-2 transition-colors ${
               s === step ? "bg-primary border-primary text-primary-foreground" : 
               s < step ? "bg-primary/20 border-primary text-primary" : "bg-card border-border text-muted-foreground"
@@ -409,73 +369,22 @@ export default function OnboardingPage() {
                     <ArrowLeft className="w-4 h-4 mr-2" /> Back
                   </Button>
                   <div className="flex gap-2">
-                    <Button variant="outline" type="button" onClick={skipToKeywords} data-testid="button-skip-step3">Skip</Button>
-                    <Button type="submit" disabled={addWebsite.isPending || generateKeywords.isPending} data-testid="button-next-step3">
-                      Add & Generate Keywords <ArrowRight className="w-4 h-4 ml-2" />
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={finishOnboarding}
+                      disabled={updateBusiness.isPending}
+                      data-testid="button-skip-step3"
+                    >
+                      Skip
+                    </Button>
+                    <Button type="submit" disabled={addWebsite.isPending || updateBusiness.isPending} data-testid="button-next-step3">
+                      Add Website & Finish <Check className="w-4 h-4 ml-2" />
                     </Button>
                   </div>
                 </CardFooter>
               </form>
             </Form>
-          </Card>
-        )}
-
-        {step === 4 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>AI Generated Keywords</CardTitle>
-              <CardDescription>Based on your profile, we suggest tracking these initial queries.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {generateKeywords.isPending ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-                  <p className="text-muted-foreground text-sm">Analyzing business context and generating queries...</p>
-                </div>
-              ) : generatedKeywords.length > 0 ? (
-                <div className="space-y-3">
-                  {generatedKeywords.map((kw, idx) => (
-                    <div key={idx} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${kw.selected ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}>
-                      <div className="flex items-center gap-3">
-                        <Checkbox 
-                          checked={kw.selected} 
-                          onCheckedChange={(checked) => {
-                            const newKws = [...generatedKeywords];
-                            newKws[idx].selected = checked === true;
-                            setGeneratedKeywords(newKws);
-                          }}
-                          data-testid={`checkbox-kw-${idx}`}
-                        />
-                        <div>
-                          <div className="font-medium text-sm">{kw.keyword}</div>
-                          <div className="text-xs text-muted-foreground">Efficiency: {kw.efficiencyScore}/10</div>
-                        </div>
-                      </div>
-                      <Badge variant={kw.efficiencyScore >= 7 ? "default" : kw.efficiencyScore < 6 ? "destructive" : "secondary"}>
-                        {kw.efficiencyScore >= 7 ? 'High Impact' : kw.efficiencyScore < 6 ? 'Low Impact' : 'Medium'}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  No keywords generated. You can add them manually later.
-                </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="ghost" type="button" onClick={() => setStep(3)} data-testid="button-back-step4">
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back
-              </Button>
-              <Button 
-                onClick={completeOnboarding} 
-                disabled={updateBusiness.isPending || addKeyword.isPending}
-                className="bg-green-600 hover:bg-green-700 text-white"
-                data-testid="button-complete-onboarding"
-              >
-                {updateBusiness.isPending ? "Saving..." : "Complete Setup"} <Check className="w-4 h-4 ml-2" />
-              </Button>
-            </CardFooter>
           </Card>
         )}
       </div>

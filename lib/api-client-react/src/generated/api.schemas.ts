@@ -197,14 +197,6 @@ export interface KeywordUpdate {
   status?: KeywordUpdateStatus;
 }
 
-export interface KeywordSuggestion {
-  keyword: string;
-  reason: string;
-  /** @nullable */
-  estimatedVolume?: number | null;
-  efficiencyScore: number;
-}
-
 export interface SwitchBusinessInput {
   businessId: number;
 }
@@ -324,37 +316,4 @@ export interface DashboardSummary {
   lastReportDate?: string | null;
   topKeywords?: Keyword[];
   onboardingComplete: boolean;
-}
-
-export interface OpenaiConversation {
-  id: number;
-  title: string;
-  createdAt: string;
-}
-
-export interface OpenaiMessage {
-  id: number;
-  conversationId: number;
-  role: string;
-  content: string;
-  createdAt: string;
-}
-
-export interface OpenaiConversationInput {
-  title: string;
-}
-
-export interface OpenaiMessageInput {
-  content: string;
-}
-
-export interface OpenaiConversationWithMessages {
-  id: number;
-  title: string;
-  createdAt: string;
-  messages: OpenaiMessage[];
-}
-
-export interface OpenaiError {
-  error: string;
 }

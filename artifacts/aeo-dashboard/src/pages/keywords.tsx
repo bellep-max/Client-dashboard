@@ -4,16 +4,14 @@ import {
   useAddKeyword, 
   useUpdateKeyword, 
   useDeleteKeyword,
-  useGetKeywordSuggestions,
   useListKeywordLinks,
   useAddKeywordLink,
   useDeleteKeywordLink,
   useAnalyzeKeywordLink,
-  getGetKeywordSuggestionsQueryKey,
   getListKeywordsQueryKey
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -21,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Trash2, Edit2, Loader2, Sparkles, AlertCircle, X, Search, Link2, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -97,7 +94,6 @@ export default function KeywordsPage() {
           <p className="text-muted-foreground mt-1">Manage target queries for Answer Engine Optimization</p>
         </div>
         <div className="flex gap-3">
-          <SuggestionsSidebar />
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
               <Button data-testid="button-add-keyword"><Plus className="w-4 h-4 mr-2" /> Add Keyword</Button>
@@ -467,76 +463,5 @@ function KeywordLinksPanel({ keywordId, keywordText }: { keywordId: number; keyw
         </div>
       )}
     </div>
-  );
-}
-
-function SuggestionsSidebar() {
-  const queryClient = useQueryClient();
-  const { data: suggestions, isLoading, refetch, isRefetching } = useGetKeywordSuggestions({ query: { enabled: false, queryKey: getGetKeywordSuggestionsQueryKey() } });
-  const addKeyword = useAddKeyword();
-
-  const handleAddSuggestion = (kw: any) => {
-    if (kw.efficiencyScore < 6) {
-      toast.warning(`Warning: "${kw.keyword}" has a low efficiency score.`);
-    }
-    addKeyword.mutate({ data: { keyword: kw.keyword, isAiGenerated: true, notes: kw.reason } }, {
-      onSuccess: () => {
-        toast.success("Added to tracking");
-        queryClient.invalidateQueries({ queryKey: getListKeywordsQueryKey() });
-      }
-    });
-  };
-
-  return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="secondary" onClick={() => refetch()} data-testid="button-get-suggestions">
-          <Sparkles className="w-4 h-4 mr-2" /> Get Suggestions
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto border-l-border bg-card">
-        <SheetHeader className="mb-6">
-          <SheetTitle className="flex items-center"><Sparkles className="w-5 h-5 mr-2 text-primary" /> AI Recommendations</SheetTitle>
-          <SheetDescription>Topic-based and intent-based queries for AI answer engine optimization.</SheetDescription>
-        </SheetHeader>
-
-        {(isLoading || isRefetching) ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-            <p className="text-sm text-muted-foreground">Analyzing search patterns...</p>
-          </div>
-        ) : suggestions?.length ? (
-          <div className="space-y-4">
-            {suggestions.map((sug, i) => (
-              <Card key={i} className="bg-background border-border">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <h4 className="font-medium text-sm leading-tight">{sug.keyword}</h4>
-                    <Badge variant={sug.efficiencyScore >= 7 ? "default" : sug.efficiencyScore < 6 ? "outline" : "secondary"} className={sug.efficiencyScore < 6 ? "text-amber-500 border-amber-500/50" : ""}>
-                      {sug.efficiencyScore}/10
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{sug.reason}</p>
-                  <Button 
-                    size="sm" 
-                    className="w-full" 
-                    variant="secondary"
-                    onClick={() => handleAddSuggestion(sug)}
-                    disabled={addKeyword.isPending}
-                    data-testid={`button-add-suggestion-${i}`}
-                  >
-                    Track Query
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-10 text-muted-foreground">
-            No suggestions available right now.
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
   );
 }

@@ -3,7 +3,6 @@ import { eq, desc } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { db, businessesTable, keywordsTable, reportsTable, gbpProfilesTable, websitesTable } from "@workspace/db";
 import { GetReportParams } from "@workspace/api-zod";
-import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
 
@@ -66,22 +65,7 @@ router.post("/businesses/me/reports", requireAuth, async (req: any, res): Promis
     ? activeKws.reduce((sum, k) => sum + (k.efficiencyScore ?? 5), 0) / activeKws.length
     : null;
 
-  let aiSummary: string | null = null;
-  if (keywords.length > 0) {
-    try {
-      const summaryPrompt = `Generate a concise 2-3 sentence bi-weekly AEO performance summary for ${business.businessName}. 
-Keywords tracked: ${activeKws.length}. Improved: ${improved}. Declined: ${declined}.
-Top keywords: ${topKeywords.map(k => k.keyword).join(", ")}.
-Highlight wins, areas to improve, and one actionable next step.`;
-
-      const summaryRes = await openai.chat.completions.create({
-        model: "gpt-5.4",
-        max_completion_tokens: 300,
-        messages: [{ role: "user", content: summaryPrompt }],
-      });
-      aiSummary = summaryRes.choices[0]?.message?.content ?? null;
-    } catch {}
-  }
+  const aiSummary: string | null = null;
 
   const [report] = await db.insert(reportsTable).values({
     businessId: business.id,

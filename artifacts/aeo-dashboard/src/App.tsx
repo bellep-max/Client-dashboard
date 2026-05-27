@@ -13,7 +13,6 @@ import LandingPage from "@/pages/landing";
 import DashboardPage from "@/pages/dashboard";
 import KeywordsPage from "@/pages/keywords";
 import ReportsPage from "@/pages/reports";
-import AgentPage from "@/pages/agent";
 import SettingsPage from "@/pages/settings";
 import OnboardingPage from "@/pages/onboarding";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -68,7 +67,12 @@ const clerkAppearance = {
 function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+      <div className="w-full flex flex-col items-center gap-3">
+        <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+        <p className="text-sm text-muted-foreground text-center">
+          Sign in with Google or your email address
+        </p>
+      </div>
     </div>
   );
 }
@@ -165,7 +169,6 @@ function ClerkProviderWithRoutes() {
           <Route path="/dashboard" component={() => <ProtectedRoute component={DashboardPage} />} />
           <Route path="/keywords" component={() => <ProtectedRoute component={KeywordsPage} />} />
           <Route path="/reports" component={() => <ProtectedRoute component={ReportsPage} />} />
-          <Route path="/agent" component={() => <ProtectedRoute component={AgentPage} />} />
           <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
 
           <Route component={NotFound} />

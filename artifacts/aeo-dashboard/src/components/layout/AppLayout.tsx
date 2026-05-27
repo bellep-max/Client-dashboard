@@ -1,8 +1,9 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
 import { UserButton, useClerk } from "@clerk/react";
-import { LayoutDashboard, Key, BarChart3, Bot, Settings, Sun, Moon, Plus, LogOut } from "lucide-react";
-import { useGetMyBusiness } from "@workspace/api-client-react";
+import { LayoutDashboard, Key, BarChart3, Settings, Sun, Moon, Plus, LogOut, Building2, Check } from "lucide-react";
+import { useGetMyBusiness, useListBusinesses, useSwitchBusiness } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/hooks/use-theme";
 
 function ThemeToggle() {
@@ -23,14 +24,28 @@ function ThemeToggle() {
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { data: business } = useGetMyBusiness();
+  const { data: businesses } = useListBusinesses();
+  const switchBusiness = useSwitchBusiness();
+  const queryClient = useQueryClient();
   const { signOut } = useClerk();
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/keywords", label: "Keywords", icon: Key },
     { href: "/reports", label: "Reports", icon: BarChart3 },
-    { href: "/agent", label: "AI Agent", icon: Bot },
   ];
+
+  const handleSwitchBusiness = (businessId: number) => {
+    if (businessId === business?.id) return;
+    switchBusiness.mutate(
+      { data: { businessId } },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries();
+        },
+      }
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
@@ -47,7 +62,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location === item.href;
             return (
@@ -66,6 +81,31 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+
+          {businesses && businesses.length > 0 && (
+            <div className="pt-2 mt-2 border-t border-border">
+              <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Businesses
+              </p>
+              {businesses.map((biz) => (
+                <button
+                  key={biz.id}
+                  onClick={() => handleSwitchBusiness(biz.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors cursor-pointer text-left ${
+                    biz.isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                  data-testid={`nav-business-${biz.id}`}
+                  disabled={switchBusiness.isPending}
+                >
+                  <Building2 className="w-4 h-4 shrink-0" />
+                  <span className="font-medium text-sm truncate flex-1">{biz.businessName}</span>
+                  {biz.isActive && <Check className="w-3 h-3 shrink-0" />}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="pt-2 mt-2 border-t border-border">
             <Link href="/onboarding?new=1">

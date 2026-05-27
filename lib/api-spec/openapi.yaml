@@ -13,11 +13,9 @@ tags:
   - name: business
     description: Business profile and onboarding
   - name: keywords
-    description: Keyword management and AI generation
+    description: Keyword management
   - name: reports
     description: Bi-weekly performance reports
-  - name: openai
-    description: OpenAI AI chat operations
 paths:
   # ─── Multi-Business ───────────────────────────────────────────────────────────
   /businesses:
@@ -302,36 +300,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/Keyword"
 
-  /businesses/me/keywords/generate:
-    post:
-      operationId: generateKeywords
-      tags: [keywords]
-      summary: Use AI to generate keyword suggestions for the business
-      responses:
-        "200":
-          description: Generated keywords
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/KeywordSuggestion"
-
-  /businesses/me/keywords/suggestions:
-    get:
-      operationId: getKeywordSuggestions
-      tags: [keywords]
-      summary: Get ongoing AI-powered keyword improvement suggestions
-      responses:
-        "200":
-          description: Keyword suggestions with efficiency analysis
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/KeywordSuggestion"
-
   /businesses/me/keywords/{id}/links:
     get:
       operationId: listKeywordLinks
@@ -513,125 +481,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
-
-  # ─── OpenAI Conversations ─────────────────────────────────────────────────────
-  /openai/conversations:
-    get:
-      operationId: listOpenaiConversations
-      tags: [openai]
-      summary: List all AI agent conversations
-      responses:
-        "200":
-          description: List of conversations
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/OpenaiConversation"
-    post:
-      operationId: createOpenaiConversation
-      tags: [openai]
-      summary: Create a new AI agent conversation
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/OpenaiConversationInput"
-      responses:
-        "201":
-          description: Created conversation
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OpenaiConversation"
-
-  /openai/conversations/{id}:
-    get:
-      operationId: getOpenaiConversation
-      tags: [openai]
-      summary: Get conversation with messages
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Conversation with messages
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OpenaiConversationWithMessages"
-        "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OpenaiError"
-    delete:
-      operationId: deleteOpenaiConversation
-      tags: [openai]
-      summary: Delete a conversation
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "204":
-          description: Deleted
-        "404":
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OpenaiError"
-
-  /openai/conversations/{id}/messages:
-    get:
-      operationId: listOpenaiMessages
-      tags: [openai]
-      summary: List messages in a conversation
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: List of messages
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/OpenaiMessage"
-    post:
-      operationId: sendOpenaiMessage
-      tags: [openai]
-      summary: Send a text message and receive a streaming response
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/OpenaiMessageInput"
-      responses:
-        "200":
-          description: SSE stream of assistant text chunks
-          content:
-            text/event-stream: {}
 
 components:
   schemas:
@@ -912,22 +761,6 @@ components:
           type: string
           enum: [active, paused, archived]
 
-    KeywordSuggestion:
-      type: object
-      properties:
-        keyword:
-          type: string
-        reason:
-          type: string
-        estimatedVolume:
-          type: ["integer", "null"]
-        efficiencyScore:
-          type: number
-      required:
-        - keyword
-        - reason
-        - efficiencyScore
-
     SwitchBusinessInput:
       type: object
       properties:
@@ -1094,83 +927,3 @@ components:
         - recentKeywordTrend
         - onboardingComplete
 
-    # ─── OpenAI ──────────────────────────────────────────────────────────────────
-    OpenaiConversation:
-      type: object
-      properties:
-        id:
-          type: integer
-        title:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - title
-        - createdAt
-
-    OpenaiMessage:
-      type: object
-      properties:
-        id:
-          type: integer
-        conversationId:
-          type: integer
-        role:
-          type: string
-        content:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-      required:
-        - id
-        - conversationId
-        - role
-        - content
-        - createdAt
-
-    OpenaiConversationInput:
-      type: object
-      properties:
-        title:
-          type: string
-      required:
-        - title
-
-    OpenaiMessageInput:
-      type: object
-      properties:
-        content:
-          type: string
-      required:
-        - content
-
-    OpenaiConversationWithMessages:
-      type: object
-      properties:
-        id:
-          type: integer
-        title:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        messages:
-          type: array
-          items:
-            $ref: "#/components/schemas/OpenaiMessage"
-      required:
-        - id
-        - title
-        - createdAt
-        - messages
-
-    OpenaiError:
-      type: object
-      properties:
-        error:
-          type: string
-      required:
-        - error
