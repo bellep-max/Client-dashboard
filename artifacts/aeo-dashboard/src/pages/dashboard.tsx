@@ -1,20 +1,30 @@
 import React from "react";
 import { useGetDashboardSummary, useGenerateReport, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, Key, TrendingUp, ShieldCheck, AlertCircle, FileText, ArrowRight, Plus } from "lucide-react";
+import { BarChart3, Key, TrendingUp, ShieldCheck, AlertCircle, FileText, ArrowRight, Plus, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Link } from "wouter";
+import { listPortalBusinesses, type PortalBusiness } from "@/lib/portal-api";
+import { BUSINESSES_QUERY_KEY } from "@/pages/businesses";
+
+const MAX_DASHBOARD_BUSINESSES = 5;
 
 export default function DashboardPage() {
   const { data: summary, isLoading, isError } = useGetDashboardSummary();
   const queryClient = useQueryClient();
   const generateReport = useGenerateReport();
+  const { data: businesses, isLoading: businessesLoading } = useQuery<
+    PortalBusiness[]
+  >({
+    queryKey: BUSINESSES_QUERY_KEY,
+    queryFn: listPortalBusinesses,
+  });
 
   const handleGenerateReport = () => {
     generateReport.mutate(undefined, {
@@ -93,7 +103,7 @@ export default function DashboardPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <div className="flex gap-3">
-          <Link href="/onboarding?new=1">
+          <Link href="/businesses">
             <Button variant="outline" data-testid="button-add-business">
               <Plus className="w-4 h-4 mr-2" /> Add Business
             </Button>
@@ -150,6 +160,79 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" /> My Businesses
+            </CardTitle>
+            <CardDescription>
+              {businesses && businesses.length > 0
+                ? `${businesses.length} business${businesses.length === 1 ? "" : "es"} in your portfolio`
+                : "Locations and brands you track"}
+            </CardDescription>
+          </div>
+          {businesses && businesses.length > MAX_DASHBOARD_BUSINESSES && (
+            <Link href="/businesses">
+              <Button variant="ghost" size="sm" data-testid="link-view-all-businesses">
+                View all <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </Link>
+          )}
+        </CardHeader>
+        <CardContent>
+          {businessesLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full" />
+              ))}
+            </div>
+          ) : !businesses || businesses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <Building2 className="w-10 h-10 text-muted-foreground mb-3 opacity-20" />
+              <p className="text-sm text-muted-foreground mb-3">
+                No businesses yet. Add your first one to start tracking
+                keywords and campaigns.
+              </p>
+              <Link href="/businesses">
+                <Button size="sm" data-testid="button-add-first-business">
+                  <Plus className="w-4 h-4 mr-2" /> Add Business
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {businesses
+                .slice(0, MAX_DASHBOARD_BUSINESSES)
+                .map((biz) => (
+                  <Link key={biz.id} href={`/businesses/${biz.id}`}>
+                    <div
+                      className="border rounded-lg p-3 hover:bg-muted/40 hover:border-primary/40 transition-colors cursor-pointer"
+                      data-testid={`dashboard-business-${biz.id}`}
+                    >
+                      <div className="font-medium text-sm truncate">
+                        {biz.name?.trim() ? biz.name : `Business #${biz.id}`}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {[biz.city, biz.state].filter(Boolean).join(", ") ||
+                          "No location set"}
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {biz.keywordCount ?? 0} kw
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {biz.campaignCount ?? 0} camp
+                        </Badge>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">

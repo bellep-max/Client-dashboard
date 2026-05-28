@@ -5,6 +5,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  role?: string;
 }
 
 interface AuthContextValue {
@@ -31,6 +32,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/auth/me", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
+        // Admin/owner accounts that land on the portal SPA get bounced to the
+        // separate admin CloudFront distribution (different origin / cookie jar).
+        if (data?.role === "admin" || data?.role === "owner") {
+          const adminUrl = import.meta.env.VITE_ADMIN_URL || null;
+          if (adminUrl) {
+            window.location.href = adminUrl;
+          } else {
+            console.warn("Admin role detected on portal but VITE_ADMIN_URL not set");
+            setUser(null);
+          }
+          return;
+        }
         setUser(data);
       } else {
         setUser(null);
@@ -47,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     setUser(null);
-    setLocation("/");
+    setLocation("/sign-in");
   }, [setLocation]);
 
   return (

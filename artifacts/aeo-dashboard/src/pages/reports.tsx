@@ -3,21 +3,74 @@ import { useListReports, useGetReport } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Loader2, FileText, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Loader2, FileText, ChevronRight, TrendingUp, TrendingDown, Minus, Download } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { listRankingReports } from "@/lib/portal-api";
+import { toCsv, downloadCsv, isoDateStamp } from "@/lib/csv-export";
 
 export default function ReportsPage() {
   const { data: reports, isLoading } = useListReports();
   const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    try {
+      const rows = await listRankingReports();
+      if (rows.length === 0) {
+        toast.info("No ranking reports to export yet.");
+        return;
+      }
+      const csv = toCsv(rows as unknown as Record<string, unknown>[], [
+        { key: "date", header: "Date" },
+        { key: "keyword", header: "Keyword" },
+        { key: "platform", header: "Platform" },
+        { key: "rankingPosition", header: "Position" },
+        { key: "rankingTotal", header: "Total Results" },
+        { key: "mapsPresence", header: "Maps Presence" },
+        { key: "status", header: "Status" },
+        { key: "bizName", header: "Business" },
+        { key: "searchAddress", header: "Search Address" },
+        { key: "proxyCity", header: "Proxy City" },
+        { key: "proxyRegion", header: "Proxy Region" },
+        { key: "proxyCountry", header: "Proxy Country" },
+        { key: "createdAt", header: "Created At" },
+      ]);
+      downloadCsv(`aeo-ranking-reports-${isoDateStamp()}.csv`, csv);
+      toast.success(`Exported ${rows.length} rows`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="flex h-[calc(100vh-2px)] overflow-hidden">
       {/* Left List */}
       <div className={`w-full md:w-80 lg:w-96 border-r border-border bg-card flex flex-col h-full shrink-0 ${selectedReportId ? 'hidden md:flex' : 'flex'}`}>
-        <div className="p-4 border-b border-border">
-          <h1 className="text-xl font-bold">Reports</h1>
-          <p className="text-sm text-muted-foreground">Bi-weekly AEO insights</p>
+        <div className="p-4 border-b border-border flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold">Reports</h1>
+            <p className="text-sm text-muted-foreground">Bi-weekly AEO insights</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary"
+            onClick={handleExportCsv}
+            disabled={isExporting}
+            data-testid="button-export-csv"
+          >
+            {isExporting ? (
+              <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5 mr-1.5" />
+            )}
+            Export CSV
+          </Button>
         </div>
         
         <div className="flex-1 overflow-y-auto p-3 space-y-2">

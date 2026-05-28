@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Trash2, Building, Globe, Plus, Check } from "lucide-react";
+import { Loader2, Trash2, Building, Globe, Plus, Check, KeyRound } from "lucide-react";
 
 const businessSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
@@ -309,7 +309,105 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        <ChangePasswordCard />
+
       </div>
     </div>
+  );
+}
+
+function ChangePasswordCard() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("New password and confirmation do not match");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error ?? `Request failed (${res.status})`);
+      }
+      toast.success("Password updated");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update password");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <KeyRound className="w-5 h-5" /> Change Password
+        </CardTitle>
+        <CardDescription>Update the password you use to sign in.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4 max-w-md" data-testid="form-change-password">
+          <div className="space-y-2">
+            <label htmlFor="currentPassword" className="text-sm font-medium">Current Password</label>
+            <Input
+              id="currentPassword"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              data-testid="input-current-password"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="newPassword" className="text-sm font-medium">New Password</label>
+            <Input
+              id="newPassword"
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              minLength={8}
+              required
+              data-testid="input-new-password"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="confirmPassword" className="text-sm font-medium">Confirm New Password</label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              minLength={8}
+              required
+              data-testid="input-confirm-password"
+            />
+          </div>
+          <Button type="submit" disabled={submitting} data-testid="button-change-password">
+            {submitting ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Updating…</>) : "Update Password"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

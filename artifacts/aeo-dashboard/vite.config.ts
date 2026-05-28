@@ -66,6 +66,24 @@ export default defineConfig({
     fs: {
       strict: true,
     },
+    proxy: {
+      // Proxy frontend `/api/*` calls to the AEOAdmin customer-portal
+      // namespace at `http://localhost:3000/api/portal/*`. Keeping the proxy
+      // on the same origin lets the `portal_token` httpOnly cookie attach to
+      // localhost:<vite-port> normally — no cross-origin / CORS handling
+      // required while developing.
+      "/api": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+        // /api/auth/* is admin's unified auth (express-session connect.sid).
+        // Everything else gets auto-scoped via /api/portal/* on the backend.
+        rewrite: (urlPath) => {
+          if (urlPath.startsWith("/api/auth/")) return urlPath;
+          if (urlPath.startsWith("/api/portal/")) return urlPath;
+          return urlPath.replace(/^\/api/, "/api/portal");
+        },
+      },
+    },
   },
   preview: {
     port,

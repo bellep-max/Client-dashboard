@@ -17,7 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Trash2, Edit2, Loader2, Sparkles, AlertCircle, X, Search, Link2, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Edit2, Loader2, Sparkles, AlertCircle, X, Search, Link2, RefreshCw, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { Link } from "wouter";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -218,6 +219,11 @@ export default function KeywordsPage() {
                       <TableCell className="text-right">
                         {editingId !== kw.id && (
                           <div className="flex justify-end gap-1">
+                            <Link href={`/keywords/${kw.id}`}>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" data-testid={`button-open-keyword-${kw.id}`} aria-label="Open keyword detail">
+                                <ExternalLink className="w-4 h-4" />
+                              </Button>
+                            </Link>
                             <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => { setEditingId(kw.id); setEditString(kw.keyword); }} data-testid={`button-edit-keyword-${kw.id}`}>
                               <Edit2 className="w-4 h-4" />
                             </Button>
@@ -258,7 +264,10 @@ function KeywordLinksPanel({ keywordId, keywordText }: { keywordId: number; keyw
   const [newDescription, setNewDescription] = useState("");
   const [newLinkType, setNewLinkType] = useState<"backlink" | "blog" | "newsletter" | "news" | "social" | "directory" | "citation" | "other">("backlink");
 
-  const linksQueryKey = ["/api/businesses/me/keywords", keywordId, "links"];
+  // Must match the key produced by getListKeywordLinksQueryKey in the
+  // generated api-client; otherwise invalidation never triggers a refetch
+  // and the panel only updates on a full page reload.
+  const linksQueryKey = [`/api/businesses/me/keywords/${keywordId}/links`];
 
   const handleAddLink = () => {
     if (!newUrl.trim()) return;

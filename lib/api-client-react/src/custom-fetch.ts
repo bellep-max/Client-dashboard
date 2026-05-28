@@ -360,7 +360,12 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  // Default to sending credentials (cookies) so httpOnly session cookies set
+  // by the backend (e.g. `portal_token`) flow back on subsequent API calls.
+  // Callers can opt out by explicitly passing `credentials` in their options.
+  const credentials = init.credentials ?? "include";
+
+  const response = await fetch(input, { ...init, method, headers, credentials });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
