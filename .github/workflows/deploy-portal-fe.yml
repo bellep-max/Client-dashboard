@@ -4,14 +4,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'artifacts/aeo-dashboard/**'
-      - 'lib/api-client-react/**'
-      - 'lib/api-zod/**'
-      - 'lib/api-spec/**'
-      - 'lib/integrations/**'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - '.github/workflows/deploy-portal-fe.yml'
+      - "artifacts/aeo-dashboard/**"
+      - "lib/api-client-react/**"
+      - "lib/api-zod/**"
+      - "lib/api-spec/**"
+      - "lib/integrations/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/deploy-portal-fe.yml"
   workflow_dispatch: {}
 
 concurrency:
@@ -39,12 +39,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install
         run: pnpm install --frozen-lockfile
 
       - name: Build aeo-dashboard
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
         run: pnpm --filter @workspace/aeo-dashboard build
 
       - name: Configure AWS credentials
