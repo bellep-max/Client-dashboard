@@ -18,7 +18,10 @@ function TypewriterEngines() {
     const word = ENGINES[index];
     let timeout: ReturnType<typeof setTimeout>;
     if (!deleting && displayed.length < word.length) {
-      timeout = setTimeout(() => setDisplayed(word.slice(0, displayed.length + 1)), 80);
+      timeout = setTimeout(
+        () => setDisplayed(word.slice(0, displayed.length + 1)),
+        80,
+      );
     } else if (!deleting && displayed.length === word.length) {
       timeout = setTimeout(() => setDeleting(true), 1400);
     } else if (deleting && displayed.length > 0) {
@@ -86,7 +89,13 @@ function PulsingNodes() {
     { cx: 420, cy: 90 },
   ];
   const edges = [
-    [0, 1], [1, 2], [0, 3], [3, 4], [2, 5], [1, 5], [3, 2],
+    [0, 1],
+    [1, 2],
+    [0, 3],
+    [3, 4],
+    [2, 5],
+    [1, 5],
+    [3, 2],
   ];
 
   return (
@@ -100,8 +109,10 @@ function PulsingNodes() {
       {edges.map(([a, b], i) => (
         <motion.line
           key={i}
-          x1={nodes[a].cx} y1={nodes[a].cy}
-          x2={nodes[b].cx} y2={nodes[b].cy}
+          x1={nodes[a].cx}
+          y1={nodes[a].cy}
+          x2={nodes[b].cx}
+          y2={nodes[b].cy}
           stroke="hsl(var(--primary))"
           strokeOpacity={0.15}
           strokeWidth={1.5}
@@ -113,7 +124,9 @@ function PulsingNodes() {
       {nodes.map((node, i) => (
         <g key={i}>
           <motion.circle
-            cx={node.cx} cy={node.cy} r={18}
+            cx={node.cx}
+            cy={node.cy}
+            r={18}
             fill="hsl(var(--primary))"
             fillOpacity={0.06}
             stroke="hsl(var(--primary))"
@@ -122,16 +135,27 @@ function PulsingNodes() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: [1, 1.15, 1], opacity: 1 }}
             transition={{
-              scale: { duration: 2.5, delay: i * 0.3 + 0.5, repeat: Infinity, ease: "easeInOut" },
+              scale: {
+                duration: 2.5,
+                delay: i * 0.3 + 0.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              },
               opacity: { duration: 0.4, delay: i * 0.15 + 0.3 },
             }}
           />
           <motion.circle
-            cx={node.cx} cy={node.cy} r={5}
+            cx={node.cx}
+            cy={node.cy}
+            r={5}
             fill="hsl(var(--primary))"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ duration: 0.3, delay: i * 0.15 + 0.5, type: "spring" }}
+            transition={{
+              duration: 0.3,
+              delay: i * 0.15 + 0.5,
+              type: "spring",
+            }}
           />
         </g>
       ))}
@@ -146,7 +170,11 @@ const stagger = {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: "easeOut" as const } },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: "easeOut" as const },
+  },
 };
 
 const fadeIn = {
@@ -201,10 +229,16 @@ export default function LandingPage() {
             data-testid="button-theme-toggle"
             aria-label="Toggle theme"
           >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {isDark ? (
+              <Sun className="w-4 h-4" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
           </button>
           <Link href="/sign-in">
-            <Button variant="ghost" size="sm">Sign In</Button>
+            <Button variant="ghost" size="sm">
+              Sign In
+            </Button>
           </Link>
         </div>
       </motion.header>
@@ -229,7 +263,9 @@ export default function LandingPage() {
               >
                 <Bot className="w-4 h-4 shrink-0" />
               </motion.div>
-              <span className="text-sm font-medium">Answer Engine Optimization</span>
+              <span className="text-sm font-medium">
+                Answer Engine Optimization
+              </span>
             </motion.div>
 
             <motion.div variants={fadeUp} className="mb-3">
@@ -242,16 +278,15 @@ export default function LandingPage() {
               variants={fadeUp}
               className="text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight mb-6 leading-tight"
             >
-              Command your<br />
-              visibility in{" "}
-              <span className="text-primary">AI search</span>.
+              Command your
+              <br />
+              visibility in <span className="text-primary">AI search</span>.
             </motion.h1>
 
             <motion.div variants={fadeUp} className="mb-6">
               <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-                When customers ask{" "}
-                <TypewriterEngines />
-                {" "}about your business,<br className="hidden lg:block" />
+                When customers ask <TypewriterEngines /> about your business,
+                <br className="hidden lg:block" />
                 make sure you are the answer.
               </p>
             </motion.div>
@@ -267,7 +302,10 @@ export default function LandingPage() {
                 >
                   <motion.div
                     className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5"
-                    whileHover={{ scale: 1.15, backgroundColor: "hsl(var(--primary) / 0.2)" }}
+                    whileHover={{
+                      scale: 1.15,
+                      backgroundColor: "hsl(var(--primary) / 0.2)",
+                    }}
                   >
                     <f.icon className="w-4 h-4 text-primary" />
                   </motion.div>
@@ -298,18 +336,21 @@ export default function LandingPage() {
         >
           <div className="w-full max-w-md text-center space-y-6">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Get started free</h2>
-              <p className="text-muted-foreground">Create your account and start optimizing for AI search today.</p>
+              <h2 className="text-2xl font-bold mb-2">Welcome back</h2>
+              <p className="text-muted-foreground">
+                Sign in to your account to track your AI search rankings.
+              </p>
             </div>
             <div className="flex flex-col gap-3">
-              <Link href="/sign-up">
-                <Button size="lg" className="w-full text-base">Create Account</Button>
-              </Link>
               <Link href="/sign-in">
-                <Button size="lg" variant="outline" className="w-full text-base">Sign In</Button>
+                <Button size="lg" className="w-full text-base">
+                  Sign In
+                </Button>
               </Link>
             </div>
-            <p className="text-xs text-muted-foreground">No credit card required. Cancel anytime.</p>
+            <p className="text-xs text-muted-foreground">
+              No credit card required. Cancel anytime.
+            </p>
           </div>
         </motion.div>
       </main>
