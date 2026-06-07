@@ -1,166 +1,223 @@
-import React from "react";
-import { useGetDashboardSummary, useGenerateReport, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, Key, TrendingUp, ShieldCheck, AlertCircle, FileText, ArrowRight, Plus, Building2 } from "lucide-react";
-import { format } from "date-fns";
-import { toast } from "sonner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Building2,
+  Megaphone,
+  Key,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Lock,
+  ArrowRight,
+  PartyPopper,
+} from "lucide-react";
 import { Link } from "wouter";
-import { listPortalBusinesses, type PortalBusiness } from "@/lib/portal-api";
+import {
+  listPortalBusinesses,
+  listAeoPlans,
+  listKeywordsAdminShape,
+  type PortalBusiness,
+  type AeoPlan,
+  type PortalKeyword,
+} from "@/lib/portal-api";
 import { BUSINESSES_QUERY_KEY } from "@/pages/businesses";
+import { CAMPAIGNS_QUERY_KEY } from "@/pages/campaigns";
 
-const MAX_DASHBOARD_BUSINESSES = 5;
+const KEYWORDS_QUERY_KEY = ["portal", "keywords"] as const;
+
+function StatCard({
+  title,
+  value,
+  sub,
+  icon: Icon,
+  iconClass = "text-primary",
+}: {
+  title: string;
+  value: string | number;
+  sub?: string;
+  icon: React.ElementType;
+  iconClass?: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className={`h-4 w-4 ${iconClass}`} />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TrendBadge({
+  initial,
+  current,
+}: {
+  initial: number | null;
+  current: number | null;
+}) {
+  if (initial == null || current == null)
+    return <span className="text-xs text-muted-foreground">No data</span>;
+
+  if (current < initial) {
+    const delta = initial - current;
+    return (
+      <span className="flex items-center gap-1 text-xs font-medium text-green-600">
+        <TrendingUp className="w-3.5 h-3.5" /> ↑{delta} vs initial
+      </span>
+    );
+  }
+  if (current > initial) {
+    const delta = current - initial;
+    return (
+      <span className="flex items-center gap-1 text-xs font-medium text-red-500">
+        <TrendingDown className="w-3.5 h-3.5" /> ↓{delta} vs initial
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+      <Minus className="w-3 h-3" /> Stable
+    </span>
+  );
+}
 
 export default function DashboardPage() {
-  const { data: summary, isLoading, isError } = useGetDashboardSummary();
-  const queryClient = useQueryClient();
-  const generateReport = useGenerateReport();
-  const { data: businesses, isLoading: businessesLoading } = useQuery<
-    PortalBusiness[]
-  >({
+  const { data: businesses, isLoading: bizLoading } = useQuery<PortalBusiness[]>({
     queryKey: BUSINESSES_QUERY_KEY,
     queryFn: listPortalBusinesses,
   });
 
-  const handleGenerateReport = () => {
-    generateReport.mutate(undefined, {
-      onSuccess: () => {
-        toast.success("Report generated successfully");
-        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
-      },
-      onError: () => {
-        toast.error("Failed to generate report");
-      }
-    });
-  };
+  const { data: campaigns, isLoading: campLoading } = useQuery<AeoPlan[]>({
+    queryKey: CAMPAIGNS_QUERY_KEY,
+    queryFn: listAeoPlans,
+  });
 
-  if (isLoading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <Skeleton className="h-4 w-[100px]" />
-                <Skeleton className="h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-[60px]" />
-                <Skeleton className="h-3 w-[120px] mt-2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const { data: keywords, isLoading: kwLoading } = useQuery<PortalKeyword[]>({
+    queryKey: KEYWORDS_QUERY_KEY,
+    queryFn: () => listKeywordsAdminShape(),
+  });
 
-  if (isError || !summary) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-[60vh]">
-        <Card className="max-w-lg w-full border-primary/20">
-          <CardHeader className="text-center pb-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="w-8 h-8 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Set up your first business</CardTitle>
-            <CardDescription className="text-base mt-2">
-              Add your business profile to start tracking your visibility in AI answer engines like ChatGPT, Gemini, and Perplexity.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-3 text-center py-4">
-              <div className="space-y-1">
-                <div className="text-2xl font-bold text-primary">1</div>
-                <div className="text-xs text-muted-foreground">Add your business profile</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-2xl font-bold text-primary">2</div>
-                <div className="text-xs text-muted-foreground">Connect your digital assets</div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-2xl font-bold text-primary">3</div>
-                <div className="text-xs text-muted-foreground">Track AI visibility</div>
-              </div>
-            </div>
-            <Link href="/onboarding">
-              <Button className="w-full" size="lg" data-testid="button-start-onboarding">
-                Get Started <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const stats = useMemo(() => {
+    const improved = (keywords ?? []).filter(
+      (k) => k.currentRanking != null && k.initialRanking != null && k.currentRanking < k.initialRanking
+    ).length;
+    const locked = (keywords ?? []).filter((k) => k.isLocked).length;
+    return { improved, locked };
+  }, [keywords]);
+
+  const topKeywords = useMemo(() => {
+    if (!keywords) return [];
+    return [...keywords]
+      .filter((k) => k.currentRanking != null)
+      .sort((a, b) => (a.currentRanking ?? 999) - (b.currentRanking ?? 999))
+      .slice(0, 8);
+  }, [keywords]);
+
+  const loading = bizLoading || campLoading || kwLoading;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <div className="flex gap-3">
-          <Link href="/businesses">
-            <Button variant="outline" data-testid="button-add-business">
-              <Plus className="w-4 h-4 mr-2" /> Add Business
-            </Button>
-          </Link>
-          <Button onClick={handleGenerateReport} disabled={generateReport.isPending} data-testid="button-generate-report">
-            {generateReport.isPending ? "Generating..." : "Generate Report"}
-          </Button>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Your AEO visibility at a glance.
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Visibility Score</CardTitle>
-            <BarChart3 className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.visibilityScore ?? "N/A"}</div>
-            <p className="text-xs text-muted-foreground mt-1">Based on keyword positions</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Keywords</CardTitle>
-            <Key className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.activeKeywords}</div>
-            <p className="text-xs text-muted-foreground mt-1">Out of {summary.totalKeywords} total</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Efficiency</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.averageEfficiencyScore?.toFixed(1) ?? "N/A"}</div>
-            <p className="text-xs text-muted-foreground mt-1">Score out of 10</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">GBP Status</CardTitle>
-            {summary.gbpVerified ? (
-              <ShieldCheck className="h-4 w-4 text-green-500" />
-            ) : (
-              <AlertCircle className="h-4 w-4 text-destructive" />
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.gbpVerified ? "Verified" : "Action Needed"}</div>
-            <p className="text-xs text-muted-foreground mt-1">{summary.totalWebsites} connected websites</p>
-          </CardContent>
-        </Card>
+      {/* Locked keyword celebration banner */}
+      {!kwLoading && stats.locked > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 px-5 py-4 flex items-start gap-4">
+          <PartyPopper className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-amber-800 dark:text-amber-300">
+              {stats.locked} keyword{stats.locked > 1 ? "s" : ""} reached top 3!
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+              {keywords?.filter(k => k.isLocked).map(k => k.keywordText).join(" · ")}
+            </p>
+            <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+              These keywords are now locked and being monitored to maintain their top position.
+            </p>
+          </div>
+          <Link href="/campaigns">
+            <Button size="sm" variant="outline" className="border-amber-400 text-amber-700 hover:bg-amber-100 dark:text-amber-400 shrink-0">
+              View <ArrowRight className="w-3 h-3 ml-1" />
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {loading ? (
+          [...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-24" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-3 w-32 mt-2" />
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <>
+            <StatCard
+              title="Businesses"
+              value={businesses?.length ?? 0}
+              sub="Active accounts"
+              icon={Building2}
+            />
+            <StatCard
+              title="Campaigns"
+              value={campaigns?.length ?? 0}
+              sub="AEO plans running"
+              icon={Megaphone}
+            />
+            <StatCard
+              title="Keywords Improved"
+              value={stats.improved}
+              sub={`vs. initial ranking`}
+              icon={TrendingUp}
+              iconClass="text-green-600"
+            />
+            <StatCard
+              title="Keywords Locked"
+              value={stats.locked}
+              sub="Reached top 3"
+              icon={Lock}
+              iconClass="text-amber-500"
+            />
+          </>
+        )}
       </div>
 
+      {/* Businesses overview */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
@@ -173,148 +230,132 @@ export default function DashboardPage() {
                 : "Locations and brands you track"}
             </CardDescription>
           </div>
-          {businesses && businesses.length > MAX_DASHBOARD_BUSINESSES && (
-            <Link href="/businesses">
-              <Button variant="ghost" size="sm" data-testid="link-view-all-businesses">
-                View all <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
-          )}
+          <Link href="/businesses">
+            <Button variant="ghost" size="sm">
+              View all <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
+          </Link>
         </CardHeader>
         <CardContent>
-          {businessesLoading ? (
+          {bizLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {[...Array(3)].map((_, i) => (
                 <Skeleton key={i} className="h-20 w-full" />
               ))}
             </div>
           ) : !businesses || businesses.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <Building2 className="w-10 h-10 text-muted-foreground mb-3 opacity-20" />
-              <p className="text-sm text-muted-foreground mb-3">
-                No businesses yet. Add your first one to start tracking
-                keywords and campaigns.
-              </p>
-              <Link href="/businesses">
-                <Button size="sm" data-testid="button-add-first-business">
-                  <Plus className="w-4 h-4 mr-2" /> Add Business
-                </Button>
-              </Link>
-            </div>
+            <p className="text-sm text-muted-foreground text-center py-6">
+              No businesses yet. Businesses are added from the admin panel.
+            </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {businesses
-                .slice(0, MAX_DASHBOARD_BUSINESSES)
-                .map((biz) => (
-                  <Link key={biz.id} href={`/businesses/${biz.id}`}>
-                    <div
-                      className="border rounded-lg p-3 hover:bg-muted/40 hover:border-primary/40 transition-colors cursor-pointer"
-                      data-testid={`dashboard-business-${biz.id}`}
-                    >
-                      <div className="font-medium text-sm truncate">
-                        {biz.name?.trim() ? biz.name : `Business #${biz.id}`}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {[biz.city, biz.state].filter(Boolean).join(", ") ||
-                          "No location set"}
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {biz.keywordCount ?? 0} kw
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          {biz.campaignCount ?? 0} camp
-                        </Badge>
-                      </div>
+              {businesses.slice(0, 6).map((biz) => (
+                <Link key={biz.id} href={`/businesses/${biz.id}`}>
+                  <div className="border rounded-lg p-3 hover:bg-muted/40 hover:border-primary/40 transition-colors cursor-pointer">
+                    <div className="font-medium text-sm truncate">
+                      {biz.name?.trim() ? biz.name : `Business #${biz.id}`}
                     </div>
-                  </Link>
-                ))}
+                    <div className="text-xs text-muted-foreground truncate mt-0.5">
+                      {(biz as any).notes || "No category set"}
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {(biz as any).campaignCount ?? 0} campaign{(biz as any).campaignCount !== 1 ? "s" : ""}
+                      </Badge>
+                      <Badge
+                        variant={(biz as any).status === "active" ? "default" : "outline"}
+                        className="text-xs capitalize"
+                      >
+                        {(biz as any).status ?? "—"}
+                      </Badge>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Top Keywords</CardTitle>
-            <CardDescription>Your best performing keywords in AI search</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Keyword</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Efficiency</TableHead>
-                  <TableHead>Trend</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {summary.topKeywords?.map((kw) => (
-                  <TableRow key={kw.id}>
-                    <TableCell className="font-medium">{kw.keyword}</TableCell>
-                    <TableCell>{kw.currentPosition ?? "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant={kw.efficiencyScore && kw.efficiencyScore >= 7 ? "default" : kw.efficiencyScore && kw.efficiencyScore < 5 ? "destructive" : "secondary"}>
-                        {kw.efficiencyScore ?? "N/A"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {kw.currentPosition && kw.previousPosition ? (
-                        kw.currentPosition < kw.previousPosition ? (
-                          <span className="text-green-500 flex items-center"><TrendingUp className="w-3 h-3 mr-1" /> Up</span>
-                        ) : kw.currentPosition > kw.previousPosition ? (
-                          <span className="text-destructive flex items-center"><TrendingUp className="w-3 h-3 mr-1 rotate-180" /> Down</span>
-                        ) : (
-                          <span className="text-muted-foreground">Stable</span>
-                        )
-                      ) : "-"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!summary.topKeywords?.length && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                      No keywords tracked yet.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Last Report</CardTitle>
+      {/* Top keywords with ranking trend */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Key className="w-5 h-5" /> Keyword Rankings
+            </CardTitle>
             <CardDescription>
-              {summary.lastReportDate ? format(new Date(summary.lastReportDate), 'MMM d, yyyy') : "No reports yet"}
+              Current rank vs. initial — lower is better
             </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {summary.lastReportDate ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
-                  <TrendingUp className="text-primary w-5 h-5" />
-                  <span className="font-medium text-sm">
-                    Trend: <span className="capitalize">{summary.recentKeywordTrend}</span>
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground line-clamp-4">
-                  Check the reports page for detailed AI-generated insights on your visibility performance and recommendations.
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <FileText className="w-12 h-12 text-muted-foreground mb-4 opacity-20" />
-                <p className="text-sm text-muted-foreground">Generate your first report to see insights.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
+          </div>
+          <Link href="/campaigns">
+            <Button variant="ghost" size="sm">
+              View campaigns <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Keyword</TableHead>
+                <TableHead>Campaign</TableHead>
+                <TableHead className="text-center">Initial</TableHead>
+                <TableHead className="text-center">Current</TableHead>
+                <TableHead>Trend</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {kwLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center">
+                    <Skeleton className="h-4 w-48 mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ) : topKeywords.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground text-sm">
+                    No keyword data yet.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                topKeywords.map((kw) => (
+                  <TableRow key={kw.id} className="hover:bg-muted/40">
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-1.5">
+                        {kw.isLocked && (
+                          <Lock
+                            className="w-3 h-3 text-amber-500 shrink-0"
+                            title="Locked — reached top 3"
+                          />
+                        )}
+                        <span className="truncate max-w-[200px]">
+                          {kw.keywordText}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {kw.campaignName ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-center text-sm text-muted-foreground">
+                      {kw.initialRanking != null ? `#${kw.initialRanking}` : "—"}
+                    </TableCell>
+                    <TableCell className="text-center text-sm font-semibold">
+                      {kw.currentRanking != null ? `#${kw.currentRanking}` : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <TrendBadge
+                        initial={kw.initialRanking}
+                        current={kw.currentRanking}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

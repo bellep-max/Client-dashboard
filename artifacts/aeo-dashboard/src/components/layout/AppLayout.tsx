@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { listKeywordsAdminShape, type PortalKeyword } from "@/lib/portal-api";
 
 function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
@@ -35,13 +37,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, signOut } = useAuth();
 
+  const { data: keywords } = useQuery<PortalKeyword[]>({
+    queryKey: ["portal", "keywords"],
+    queryFn: () => listKeywordsAdminShape(),
+    staleTime: 60_000,
+  });
+  const lockedCount = (keywords ?? []).filter((k) => k.isLocked).length;
+
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/businesses", label: "Businesses", icon: Building2 },
-    { href: "/keywords", label: "Keywords", icon: Key },
-    { href: "/campaigns", label: "Campaigns", icon: Megaphone },
-    { href: "/reports", label: "Reports", icon: BarChart3 },
-    { href: "/rankings/bi-weekly", label: "Bi-Weekly", icon: CalendarClock },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: lockedCount > 0 ? lockedCount : 0 },
+    { href: "/businesses", label: "Businesses", icon: Building2, badge: 0 },
+    { href: "/campaigns", label: "Campaigns", icon: Megaphone, badge: 0 },
+    { href: "/reports", label: "Reports", icon: BarChart3, badge: 0 },
+    { href: "/rankings/bi-weekly", label: "Bi-Weekly", icon: CalendarClock, badge: 0 },
   ];
 
   return (
@@ -73,7 +81,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   data-testid={`nav-${item.label.toLowerCase().replace(" ", "-")}`}
                 >
                   <item.icon className="w-4 h-4" />
-                  <span className="font-medium text-sm">{item.label}</span>
+                  <span className="font-medium text-sm flex-1">{item.label}</span>
+                  {item.badge > 0 && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      {item.badge}
+                    </span>
+                  )}
                 </div>
               </Link>
             );

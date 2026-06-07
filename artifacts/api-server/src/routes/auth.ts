@@ -7,6 +7,13 @@ import { signToken, verifyToken, COOKIE_NAME, COOKIE_OPTIONS } from "../lib/auth
 
 const router: IRouter = Router();
 
+// In-memory OTP store for local dev (code expires in 10 minutes)
+const otpStore = new Map<string, { code: string; expiresAt: number }>();
+
+function generateCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
 const RegisterBody = z.object({
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -16,6 +23,48 @@ const RegisterBody = z.object({
 const LoginBody = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+});
+
+router.post("/auth/request-code", async (req, res): Promise<void> => {
+  const { email } = req.body ?? {};
+  if (!email || typeof email !== "string") {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+  const normalizedEmail = email.toLowerCase();
+  const [user] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, normalizedEmail));
+  if (!user) {
+    res.status(404).json({ error: "No account found with that email. Please register first." });
+    return;
+  }
+  const code = generateCode();
+  otpStore.set(normalizedEmail, { code, expiresAt: Date.now() + 10 * 60 * 1000 });
+  // Log to console for local dev — replace with email sending in production
+  console.log(`\n🔑 Sign-in code for ${normalizedEmail}: ${code}\n`);
+  res.json({ ok: true });
+});
+
+router.post("/auth/verify-code", async (req, res): Promise<void> => {
+  const { email, code } = req.body ?? {};
+  if (!email || !code) {
+    res.status(400).json({ error: "Email and code are required" });
+    return;
+  }
+  const normalizedEmail = email.toLowerCase();
+  const entry = otpStore.get(normalizedEmail);
+  if (!entry || entry.code !== String(code) || Date.now() > entry.expiresAt) {
+    res.status(401).json({ error: "Invalid or expired code." });
+    return;
+  }
+  otpStore.delete(normalizedEmail);
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, normalizedEmail));
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  const token = signToken({ userId: String(user.id), email: user.email, name: user.name });
+  res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+  res.json({ id: user.id, email: user.email, name: user.name });
 });
 
 router.post("/auth/register", async (req, res): Promise<void> => {
