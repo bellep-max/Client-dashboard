@@ -255,6 +255,9 @@ export interface PortalKeyword {
   businessName: string | null;
   campaignName: string | null;
   lastRunAt: string | null;
+  initialRanking: number | null;
+  currentRanking: number | null;
+  isLocked: boolean;
   links: Array<{
     id: number;
     keywordId: number;
@@ -347,3 +350,45 @@ export const updatePortalBusiness = (
 
 export const deletePortalBusiness = (id: number): Promise<void> =>
   request<void>(`/api/businesses/${id}`, { method: "DELETE" });
+
+// ---------------------------------------------------------------------------
+// Portal Reports (bi-weekly snapshots)
+// ---------------------------------------------------------------------------
+
+export interface PortalReport {
+  id: number;
+  userId: string;
+  title: string;
+  generatedAt: string;
+  summary: {
+    totalKeywords: number;
+    improved: number;
+    declined: number;
+    noChange: number;
+    locked: number;
+    top3: number;
+    top10: number;
+    snapshotDate: string;
+    keywords: Array<{
+      id: number;
+      keyword: string;
+      initialRanking: number | null;
+      currentRanking: number | null;
+      isLocked: boolean;
+      businessName: string | null;
+      campaignName: string | null;
+    }>;
+  };
+}
+
+export const listPortalReports = (): Promise<PortalReport[]> =>
+  request<PortalReport[]>("/api/reports");
+
+export const getPortalReport = (id: number): Promise<PortalReport> =>
+  request<PortalReport>(`/api/reports/${id}`);
+
+export const generatePortalReport = (title?: string): Promise<PortalReport> =>
+  request<PortalReport>("/api/reports", {
+    method: "POST",
+    body: JSON.stringify({ title }),
+  });
