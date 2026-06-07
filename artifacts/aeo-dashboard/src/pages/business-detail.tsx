@@ -32,8 +32,12 @@ import {
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="text-sm">{value?.trim() || <span className="text-muted-foreground">—</span>}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="text-sm">
+        {value?.trim() || <span className="text-muted-foreground">—</span>}
+      </p>
     </div>
   );
 }
@@ -64,7 +68,9 @@ export default function BusinessDetailPage() {
     select: (rows) => rows.filter((p) => p.businessId === idNum),
   });
 
-  const { data: keywords, isLoading: keywordsLoading } = useQuery<PortalKeyword[]>({
+  const { data: keywords, isLoading: keywordsLoading } = useQuery<
+    PortalKeyword[]
+  >({
     queryKey: keywordsQueryKey,
     queryFn: () => listKeywordsAdminShape({ businessId: idNum }),
     enabled: isValidId,
@@ -129,21 +135,24 @@ export default function BusinessDetailPage() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Field label="Name" value={business.name} />
-            <Field label="Status" value={(business as any).status} />
+            <Field label="Status" value={business.status} />
             <Field label="GMB URL" value={business.gmbUrl} />
             <Field label="Website URL" value={business.websiteUrl} />
             <div className="md:col-span-2">
-              <Field label="Published address" value={(business as any).publishedAddress} />
+              <Field
+                label="Published address"
+                value={business.publishedAddress}
+              />
             </div>
             <Field label="City" value={business.city} />
             <Field label="State" value={business.state} />
             <Field label="Country" value={business.country} />
-            <Field label="Zip code" value={(business as any).zipCode} />
-            <Field label="Place ID" value={(business as any).placeId} />
-            <Field label="Timezone" value={(business as any).timezone} />
-            {(business as any).notes && (
+            <Field label="Zip code" value={business.zipCode} />
+            <Field label="Place ID" value={business.placeId} />
+            <Field label="Timezone" value={business.timezone} />
+            {business.notes && (
               <div className="md:col-span-2">
-                <Field label="Notes" value={(business as any).notes} />
+                <Field label="Notes" value={business.notes} />
               </div>
             )}
           </div>
@@ -178,17 +187,25 @@ export default function BusinessDetailPage() {
                 </TableRow>
               ) : !campaigns || campaigns.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-sm">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-6 text-muted-foreground text-sm"
+                  >
                     No campaigns are linked to this business yet.
                   </TableCell>
                 </TableRow>
               ) : (
                 campaigns.map((plan) => (
-                  <TableRow key={plan.id} className="cursor-pointer hover:bg-muted/40">
+                  <TableRow
+                    key={plan.id}
+                    className="cursor-pointer hover:bg-muted/40"
+                  >
                     <TableCell className="font-medium">
                       <Link href={`/campaigns/${plan.id}`}>
                         <span className="text-primary hover:underline">
-                          {plan.name?.trim() ? plan.name : `Campaign #${plan.id}`}
+                          {plan.name?.trim()
+                            ? plan.name
+                            : `Campaign #${plan.id}`}
                         </span>
                       </Link>
                     </TableCell>
@@ -203,11 +220,17 @@ export default function BusinessDetailPage() {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{plan.keywordCount ?? 0}</Badge>
+                      <Badge variant="secondary">
+                        {plan.keywordCount ?? 0}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <Link href={`/campaigns/${plan.id}`}>
-                        <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-muted-foreground hover:text-foreground"
+                        >
                           Open
                         </Button>
                       </Link>
@@ -248,13 +271,19 @@ export default function BusinessDetailPage() {
                 </TableRow>
               ) : !keywords || keywords.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-sm">
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-6 text-muted-foreground text-sm"
+                  >
                     No keywords are linked to this business yet.
                   </TableCell>
                 </TableRow>
               ) : (
                 keywords.map((kw) => (
-                  <TableRow key={kw.id} className="cursor-pointer hover:bg-muted/40">
+                  <TableRow
+                    key={kw.id}
+                    className="cursor-pointer hover:bg-muted/40"
+                  >
                     <TableCell className="font-medium">
                       <Link href={`/keywords/${kw.id}`}>
                         <span className="text-primary hover:underline">
@@ -277,7 +306,11 @@ export default function BusinessDetailPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <Link href={`/keywords/${kw.id}`}>
-                        <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-muted-foreground hover:text-foreground"
+                        >
                           Open
                         </Button>
                       </Link>
