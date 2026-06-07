@@ -30,13 +30,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: "pnpm"
@@ -50,7 +50,7 @@ jobs:
         run: pnpm --filter @workspace/aeo-dashboard build
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -70,9 +70,19 @@ jobs:
             --cache-control 'public, max-age=0, must-revalidate'
 
       - name: Invalidate CloudFront
+        # The CloudFront API occasionally connect-times-out from the runner.
+        # The deploy (S3 sync above) is already done at this point, so retry the
+        # invalidation a few times before failing instead of red-Xing a good ship.
         run: |
-          aws cloudfront create-invalidation \
-            --distribution-id "$PORTAL_CLOUDFRONT_DIST_ID" \
-            --paths '/*'
-
-          echo "Deployed. Visit your CloudFront URL to verify."
+          for attempt in 1 2 3; do
+            if aws cloudfront create-invalidation \
+                 --distribution-id "$PORTAL_CLOUDFRONT_DIST_ID" \
+                 --paths '/*'; then
+              echo "Deployed + invalidated (attempt $attempt). Visit your CloudFront URL to verify."
+              exit 0
+            fi
+            echo "Invalidation attempt $attempt failed; retrying in $((attempt * 10))s..."
+            sleep $((attempt * 10))
+          done
+          echo "::error::CloudFront invalidation failed after 3 attempts (S3 sync already succeeded; rerun this step or invalidate manually)"
+          exit 1
