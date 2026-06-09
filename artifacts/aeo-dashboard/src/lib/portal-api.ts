@@ -112,7 +112,10 @@ export const createAeoPlan = (body: AeoPlanCreate): Promise<AeoPlan> =>
     body: JSON.stringify(body),
   });
 
-export const updateAeoPlan = (id: number, body: AeoPlanUpdate): Promise<AeoPlan> =>
+export const updateAeoPlan = (
+  id: number,
+  body: AeoPlanUpdate,
+): Promise<AeoPlan> =>
   request<AeoPlan>(`/api/aeo-plans/${id}`, {
     method: "PATCH",
     body: JSON.stringify(body),
@@ -169,9 +172,12 @@ export const listRankingReports = (
   params: ListRankingReportsParams = {},
 ): Promise<RankingReport[]> => {
   const search = new URLSearchParams();
-  if (params.businessId != null) search.set("businessId", String(params.businessId));
-  if (params.aeoPlanId != null) search.set("aeoPlanId", String(params.aeoPlanId));
-  if (params.keywordId != null) search.set("keywordId", String(params.keywordId));
+  if (params.businessId != null)
+    search.set("businessId", String(params.businessId));
+  if (params.aeoPlanId != null)
+    search.set("aeoPlanId", String(params.aeoPlanId));
+  if (params.keywordId != null)
+    search.set("keywordId", String(params.keywordId));
   const qs = search.toString();
   return request<RankingReport[]>(`/api/ranking-reports${qs ? `?${qs}` : ""}`);
 };
@@ -215,8 +221,10 @@ export const listKeywordsAdminShape = (
   params: { aeoPlanId?: number; businessId?: number } = {},
 ): Promise<PortalKeyword[]> => {
   const search = new URLSearchParams();
-  if (params.aeoPlanId != null) search.set("aeoPlanId", String(params.aeoPlanId));
-  if (params.businessId != null) search.set("businessId", String(params.businessId));
+  if (params.aeoPlanId != null)
+    search.set("aeoPlanId", String(params.aeoPlanId));
+  if (params.businessId != null)
+    search.set("businessId", String(params.businessId));
   const qs = search.toString();
   return request<PortalKeyword[]>(`/api/keywords${qs ? `?${qs}` : ""}`);
 };
@@ -296,43 +304,24 @@ export const deletePortalBusiness = (id: number): Promise<void> =>
   request<void>(`/api/businesses/${id}`, { method: "DELETE" });
 
 // ---------------------------------------------------------------------------
-// Portal Reports
+// Portal Reports (bi-weekly performance periods)
 // ---------------------------------------------------------------------------
 
+// Shape returned by GET /api/businesses/me/reports: one entry per ~14-day
+// period with bucket-level aggregates (the backend does not return a
+// per-keyword breakdown).
 export interface PortalReport {
   id: number;
-  userId: string;
-  title: string;
-  generatedAt: string;
-  summary: {
-    totalKeywords: number;
-    improved: number;
-    declined: number;
-    noChange: number;
-    locked: number;
-    top3: number;
-    top10: number;
-    snapshotDate: string;
-    keywords: Array<{
-      id: number;
-      keyword: string;
-      initialRanking: number | null;
-      currentRanking: number | null;
-      isLocked: boolean;
-      businessName: string | null;
-      campaignName: string | null;
-    }>;
-  };
+  businessId: number;
+  periodStart: string;
+  periodEnd: string;
+  visibilityScore: number | null;
+  averagePosition: number | null;
+  keywordsTracked: number;
+  keywordsImproved: number;
+  keywordsDeclined: number;
+  createdAt: string;
 }
 
 export const listPortalReports = (): Promise<PortalReport[]> =>
-  request<PortalReport[]>("/api/reports");
-
-export const getPortalReport = (id: number): Promise<PortalReport> =>
-  request<PortalReport>(`/api/reports/${id}`);
-
-export const generatePortalReport = (title?: string): Promise<PortalReport> =>
-  request<PortalReport>("/api/reports", {
-    method: "POST",
-    body: JSON.stringify({ title }),
-  });
+  request<PortalReport[]>("/api/businesses/me/reports");
