@@ -7,7 +7,6 @@
  * etc.) prefer the generated hooks. Use this module only for:
  *   - /api/aeo-plans (CRUD)
  *   - /api/ranking-reports (list/detail)
- *   - /api/rankings/bi-weekly-report
  *   - /api/clients/me (admin-shape)
  */
 
@@ -178,61 +177,6 @@ export const listRankingReports = (
 };
 
 // ---------------------------------------------------------------------------
-// Bi-weekly report
-// ---------------------------------------------------------------------------
-
-export interface BiWeeklyCurrentBatch {
-  batchDate: string;
-  nextDueDate: string;
-  totalSessions: number;
-  uniqueCombos: number;
-  uniqueBusinesses: number;
-  uniqueClients: number;
-  newCombos: number;
-  auditType: "First-Ever Audit" | "Recurring Audit";
-}
-
-export interface BiWeeklyOldFile {
-  earliestDate: string | null;
-  latestOldDate: string | null;
-  totalOldCombos: number;
-  onSchedule: number;
-  stillBehindTotal: number;
-  withErrors: number;
-  stillBehindByBatch: Array<{ expectedBatchDate: string; combos: number }>;
-}
-
-export interface BiWeeklyTrend {
-  eligibleCombos: number;
-  improved: number;
-  declined: number;
-  noChange: number;
-  notRanked: number;
-}
-
-export interface BiWeeklyInitial {
-  totalNewCombos: number;
-  buckets: {
-    top3: { count: number; pct: number };
-    top4to10: { count: number; pct: number };
-    top11to30: { count: number; pct: number };
-    beyond30: { count: number; pct: number };
-    notRanked: { count: number; pct: number };
-  };
-}
-
-export interface BiWeeklyReport {
-  currentBatch: BiWeeklyCurrentBatch | null;
-  oldFile: BiWeeklyOldFile | null;
-  rankingTrend: BiWeeklyTrend | null;
-  initialRanking: BiWeeklyInitial | null;
-  allBatches: Array<{ date: string; combos: number }>;
-}
-
-export const getBiWeeklyReport = (): Promise<BiWeeklyReport> =>
-  request<BiWeeklyReport>("/api/rankings/bi-weekly-report");
-
-// ---------------------------------------------------------------------------
 // Keywords (admin shape, includes aeoPlanId + lastRunAt)
 // ---------------------------------------------------------------------------
 
@@ -352,7 +296,7 @@ export const deletePortalBusiness = (id: number): Promise<void> =>
   request<void>(`/api/businesses/${id}`, { method: "DELETE" });
 
 // ---------------------------------------------------------------------------
-// Portal Reports (bi-weekly snapshots)
+// Portal Reports
 // ---------------------------------------------------------------------------
 
 export interface PortalReport {

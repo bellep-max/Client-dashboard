@@ -11,7 +11,6 @@ import {
   Building2,
   User,
   Megaphone,
-  CalendarClock,
 } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,7 +48,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: "/businesses", label: "Businesses", icon: Building2, badge: 0 },
     { href: "/campaigns", label: "Campaigns", icon: Megaphone, badge: 0 },
     { href: "/reports", label: "Reports", icon: BarChart3, badge: 0 },
-    { href: "/rankings/bi-weekly", label: "Bi-Weekly", icon: CalendarClock, badge: 0 },
   ];
 
   return (

@@ -25,7 +25,6 @@ import CampaignsPage from "@/pages/campaigns";
 import CampaignDetailPage from "@/pages/campaign-detail";
 import BusinessesPage from "@/pages/businesses";
 import BusinessDetailPage from "@/pages/business-detail";
-import RankingsBiWeeklyPage from "@/pages/rankings-bi-weekly";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
@@ -101,10 +100,6 @@ function AppRoutes() {
       <Route
         path="/reports"
         component={() => <ProtectedRoute component={ReportsPage} />}
-      />
-      <Route
-        path="/rankings/bi-weekly"
-        component={() => <ProtectedRoute component={RankingsBiWeeklyPage} />}
       />
       <Route
         path="/settings"
