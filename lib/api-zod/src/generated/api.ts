@@ -432,7 +432,7 @@ export const DeleteKeywordParams = zod.object({
 });
 
 /**
- * @summary List bi-weekly performance reports
+ * @summary List performance reports
  */
 export const ListReportsResponseItem = zod.object({
   id: zod.number(),

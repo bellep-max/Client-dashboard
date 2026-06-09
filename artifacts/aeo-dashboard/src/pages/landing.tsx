@@ -193,7 +193,7 @@ export default function LandingPage() {
     },
     {
       icon: LineChart,
-      title: "Bi-Weekly Reports",
+      title: "Performance Reports",
       desc: "Track your efficiency score and visibility trends over time.",
     },
     {

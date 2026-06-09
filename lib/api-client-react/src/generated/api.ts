@@ -1869,7 +1869,7 @@ export const useDeleteKeyword = <
 };
 
 /**
- * @summary List bi-weekly performance reports
+ * @summary List performance reports
  */
 export const getListReportsUrl = () => {
   return `/api/businesses/me/reports`;
@@ -1918,7 +1918,7 @@ export type ListReportsQueryResult = NonNullable<
 export type ListReportsQueryError = ErrorType<unknown>;
 
 /**
- * @summary List bi-weekly performance reports
+ * @summary List performance reports
  */
 
 export function useListReports<
@@ -1942,7 +1942,7 @@ export function useListReports<
 }
 
 /**
- * @summary Generate a new bi-weekly report
+ * @summary Generate a new report
  */
 export const getGenerateReportUrl = () => {
   return `/api/businesses/me/reports`;
@@ -2000,7 +2000,7 @@ export type GenerateReportMutationResult = NonNullable<
 export type GenerateReportMutationError = ErrorType<unknown>;
 
 /**
- * @summary Generate a new bi-weekly report
+ * @summary Generate a new report
  */
 export const useGenerateReport = <
   TError = ErrorType<unknown>,

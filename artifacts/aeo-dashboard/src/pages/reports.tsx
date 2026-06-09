@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Card,
@@ -28,7 +28,7 @@ import {
   Loader2,
   Plus,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, subWeeks, subMonths, isAfter } from "date-fns";
 import { toast } from "sonner";
 import {
   listPortalReports,
@@ -37,6 +37,23 @@ import {
 } from "@/lib/portal-api";
 
 const REPORTS_KEY = ["portal", "reports"] as const;
+
+type Period = "2w" | "1m" | "3m" | "all";
+
+const PERIODS: { value: Period; label: string }[] = [
+  { value: "2w", label: "Last 2 weeks" },
+  { value: "1m", label: "Last month" },
+  { value: "3m", label: "Last 3 months" },
+  { value: "all", label: "All time" },
+];
+
+function cutoffFor(period: Period): Date | null {
+  const now = new Date();
+  if (period === "2w") return subWeeks(now, 2);
+  if (period === "1m") return subMonths(now, 1);
+  if (period === "3m") return subMonths(now, 3);
+  return null;
+}
 
 function TrendChip({ initial, current }: { initial: number | null; current: number | null }) {
   if (initial == null || current == null)
@@ -63,16 +80,25 @@ function TrendChip({ initial, current }: { initial: number | null; current: numb
 export default function ReportsPage() {
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<PortalReport | null>(null);
+  const [period, setPeriod] = useState<Period>("2w");
 
   const { data: reports, isLoading } = useQuery<PortalReport[]>({
     queryKey: REPORTS_KEY,
     queryFn: listPortalReports,
   });
 
+  const filteredReports = useMemo(() => {
+    if (!reports) return [];
+    const cutoff = cutoffFor(period);
+    if (!cutoff) return reports;
+    return reports.filter((r) => isAfter(new Date(r.generatedAt), cutoff));
+  }, [reports, period]);
+
   const generateMutation = useMutation({
-    mutationFn: () => generatePortalReport(),
+    mutationFn: () =>
+      generatePortalReport(`Performance Report — ${format(new Date(), "MMM d, yyyy")}`),
     onSuccess: (report) => {
-      toast.success("Report generated");
+      toast.success("Report requested and ready");
       queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
       setSelected(report);
     },
@@ -87,22 +113,40 @@ export default function ReportsPage() {
           selected ? "hidden md:flex" : "flex"
         }`}
       >
-        <div className="p-4 border-b border-border flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold">Reports</h1>
-            <p className="text-sm text-muted-foreground">On-demand ranking snapshots</p>
+        <div className="p-4 border-b border-border space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-bold">Reports</h1>
+              <p className="text-sm text-muted-foreground">Request a performance report anytime</p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => generateMutation.mutate()}
+              disabled={generateMutation.isPending}
+            >
+              {generateMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <><Plus className="w-4 h-4 mr-1" /> Request Report</>
+              )}
+            </Button>
           </div>
-          <Button
-            size="sm"
-            onClick={() => generateMutation.mutate()}
-            disabled={generateMutation.isPending}
-          >
-            {generateMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <><Plus className="w-4 h-4 mr-1" /> Generate</>
-            )}
-          </Button>
+          {/* Period filter */}
+          <div className="flex gap-1 flex-wrap">
+            {PERIODS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                  period === p.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto divide-y divide-border">
@@ -122,11 +166,22 @@ export default function ReportsPage() {
                 onClick={() => generateMutation.mutate()}
                 disabled={generateMutation.isPending}
               >
-                Generate your first report
+                Request your first report
               </Button>
             </div>
+          ) : filteredReports.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+              <FileText className="w-10 h-10 text-muted-foreground mb-3 opacity-20" />
+              <p className="text-sm text-muted-foreground">No reports in this period.</p>
+              <button
+                className="text-xs text-primary mt-2 hover:underline"
+                onClick={() => setPeriod("all")}
+              >
+                View all time
+              </button>
+            </div>
           ) : (
-            reports.map((r) => (
+            filteredReports.map((r) => (
               <button
                 key={r.id}
                 onClick={() => setSelected(r)}
@@ -140,7 +195,8 @@ export default function ReportsPage() {
                   <p className="text-xs text-muted-foreground">
                     {format(new Date(r.generatedAt), "MMM d, yyyy · h:mm a")}
                   </p>
-                  <div className="flex gap-2 mt-1">
+                  <div className="flex flex-wrap gap-2 mt-1 items-center">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Per Request</Badge>
                     <span className="text-xs text-green-600 font-medium">↑{r.summary.improved} improved</span>
                     <span className="text-xs text-red-500 font-medium">↓{r.summary.declined} declined</span>
                     {r.summary.locked > 0 && (

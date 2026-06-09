@@ -5,6 +5,13 @@ import { eq } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import { signToken, verifyToken, COOKIE_NAME, COOKIE_OPTIONS } from "../lib/auth";
 
+// In-memory OTP store: email -> { code, expiresAt }
+const otpStore = new Map<string, { code: string; expiresAt: number }>();
+
+function generateOtp(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
 const router: IRouter = Router();
 
 const RegisterBody = z.object({
@@ -54,6 +61,52 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
+  const token = signToken({ userId: String(user.id), email: user.email, name: user.name });
+  res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+  res.json({ id: user.id, email: user.email, name: user.name });
+});
+
+router.post("/auth/request-code", async (req, res): Promise<void> => {
+  const parsed = z.object({ email: z.string().email() }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Valid email required" });
+    return;
+  }
+  const email = parsed.data.email.toLowerCase();
+  const code = generateOtp();
+  otpStore.set(email, { code, expiresAt: Date.now() + 10 * 60 * 1000 }); // 10 min TTL
+
+  // Log to console for local dev — swap for an email service in production
+  console.log(`\n=============================`);
+  console.log(`  OTP for ${email}: ${code}`);
+  console.log(`=============================\n`);
+
+  res.json({ ok: true });
+});
+
+router.post("/auth/verify-code", async (req, res): Promise<void> => {
+  const parsed = z.object({ email: z.string().email(), code: z.string() }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const email = parsed.data.email.toLowerCase();
+  const entry = otpStore.get(email);
+
+  if (!entry || entry.code !== parsed.data.code || Date.now() > entry.expiresAt) {
+    res.status(401).json({ error: "Invalid or expired code" });
+    return;
+  }
+  otpStore.delete(email);
+
+  // Find or create the user
+  let [user] = await db.select().from(usersTable).where(eq(usersTable.email, email));
+  if (!user) {
+    const name = email.split("@")[0];
+    const passwordHash = await bcrypt.hash(Math.random().toString(36), 10);
+    [user] = await db.insert(usersTable).values({ email, name, passwordHash }).returning();
+  }
+
   const token = signToken({ userId: String(user.id), email: user.email, name: user.name });
   res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
   res.json({ id: user.id, email: user.email, name: user.name });
