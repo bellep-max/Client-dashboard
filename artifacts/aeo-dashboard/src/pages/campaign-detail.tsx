@@ -23,9 +23,6 @@ import {
   Loader2,
   Key,
   Lock,
-  TrendingUp,
-  TrendingDown,
-  Minus,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -219,9 +216,6 @@ export default function CampaignDetailPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Keyword</TableHead>
-                <TableHead className="text-center">Initial Rank</TableHead>
-                <TableHead className="text-center">Current Rank</TableHead>
-                <TableHead className="text-center">Trend</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Last Run</TableHead>
               </TableRow>
@@ -229,14 +223,14 @@ export default function CampaignDetailPage() {
             <TableBody>
               {keywordsLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-20 text-center">
+                  <TableCell colSpan={3} className="h-20 text-center">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
               ) : !keywords || keywords.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={3}
                     className="text-center py-6 text-muted-foreground text-sm"
                   >
                     No keywords are linked to this campaign yet. Keywords are
@@ -245,26 +239,7 @@ export default function CampaignDetailPage() {
                 </TableRow>
               ) : (
                 keywords.map((kw) => {
-                  const initial = kw.initialRanking;
-                  const current = kw.currentRanking;
                   const isLocked = kw.isLocked;
-
-                  let TrendIcon = Minus;
-                  let trendColor = "text-muted-foreground";
-                  let trendLabel = "—";
-                  if (initial != null && current != null) {
-                    if (current < initial) {
-                      TrendIcon = TrendingUp;
-                      trendColor = "text-green-600";
-                      trendLabel = `↑ ${initial - current}`;
-                    } else if (current > initial) {
-                      TrendIcon = TrendingDown;
-                      trendColor = "text-red-500";
-                      trendLabel = `↓ ${current - initial}`;
-                    } else {
-                      trendLabel = "—";
-                    }
-                  }
 
                   return (
                     <TableRow key={kw.id} className="hover:bg-muted/40">
@@ -277,26 +252,6 @@ export default function CampaignDetailPage() {
                           )}
                           <span>{kw.keywordText}</span>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center text-sm text-muted-foreground">
-                        {initial != null ? `#${initial}` : "—"}
-                      </TableCell>
-                      <TableCell className="text-center text-sm font-medium">
-                        {current != null ? `#${current}` : "—"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {initial != null && current != null ? (
-                          <span
-                            className={`flex items-center justify-center gap-1 text-xs font-medium ${trendColor}`}
-                          >
-                            <TrendIcon className="w-3.5 h-3.5" />
-                            {trendLabel}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            No data
-                          </span>
-                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize text-xs">

@@ -302,7 +302,7 @@ export default function KeywordDetailPage() {
             </div>
           ) : sortedReports.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">
-              No ranking history yet. Once a bi-weekly audit completes this
+              No ranking history yet. Once an audit completes this
               table will populate.
             </p>
           ) : (
