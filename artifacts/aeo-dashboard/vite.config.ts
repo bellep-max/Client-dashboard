@@ -68,11 +68,7 @@ export default defineConfig({
         changeOrigin: true,
         // /api/auth/* is admin's unified auth (express-session connect.sid).
         // Everything else gets auto-scoped via /api/portal/* on the backend.
-        rewrite: (urlPath) => {
-          if (urlPath.startsWith("/api/auth/")) return urlPath;
-          if (urlPath.startsWith("/api/portal/")) return urlPath;
-          return urlPath.replace(/^\/api/, "/api/portal");
-        },
+        rewrite: (urlPath) => urlPath,
       },
     },
   },

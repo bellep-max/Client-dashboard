@@ -15,7 +15,7 @@ tags:
   - name: keywords
     description: Keyword management
   - name: reports
-    description: Bi-weekly performance reports
+    description: Performance reports
 paths:
   # ─── Multi-Business ───────────────────────────────────────────────────────────
   /businesses:
@@ -421,7 +421,7 @@ paths:
     get:
       operationId: listReports
       tags: [reports]
-      summary: List bi-weekly performance reports
+      summary: List performance reports
       responses:
         "200":
           description: Reports list
@@ -434,7 +434,7 @@ paths:
     post:
       operationId: generateReport
       tags: [reports]
-      summary: Generate a new bi-weekly report
+      summary: Generate a new report
       responses:
         "201":
           description: Generated report

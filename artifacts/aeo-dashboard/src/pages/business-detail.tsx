@@ -58,13 +58,13 @@ const PLANS = [
     id: "Starter",
     label: "Starter",
     price: "$499/mo",
-    features: ["1 campaign", "Up to 5 keywords", "Bi-weekly reports"],
+    features: ["1 campaign", "Up to 5 keywords", "Performance reports"],
   },
   {
     id: "Growth",
     label: "Growth",
     price: "$999/mo",
-    features: ["1 campaign", "Up to 10 keywords", "Bi-weekly reports", "Priority support"],
+    features: ["1 campaign", "Up to 10 keywords", "Performance reports", "Priority support"],
   },
   {
     id: "Pro",
