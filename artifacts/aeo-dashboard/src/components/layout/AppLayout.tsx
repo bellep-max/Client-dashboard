@@ -11,11 +11,13 @@ import {
   Building2,
   User,
   Megaphone,
+  Trophy,
+  Activity,
 } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { listKeywordsAdminShape, type PortalKeyword } from "@/lib/portal-api";
+import { getRotationStatus, type RotationStatus } from "@/lib/portal-api";
 
 function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
@@ -36,17 +38,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, signOut } = useAuth();
 
-  const { data: keywords } = useQuery<PortalKeyword[]>({
-    queryKey: ["portal", "keywords"],
-    queryFn: () => listKeywordsAdminShape(),
+  const { data: rotation } = useQuery<RotationStatus>({
+    queryKey: ["portal", "insights", "rotation-status"],
+    queryFn: () => getRotationStatus(),
     staleTime: 60_000,
   });
-  const lockedCount = (keywords ?? []).filter((k) => k.isLocked).length;
+  const lockedCount = rotation?.summary.locked ?? 0;
 
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: lockedCount > 0 ? lockedCount : 0 },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: 0 },
     { href: "/businesses", label: "Businesses", icon: Building2, badge: 0 },
     { href: "/campaigns", label: "Campaigns", icon: Megaphone, badge: 0 },
+    { href: "/optimization", label: "Optimization", icon: Activity, badge: 0 },
+    { href: "/locked-keywords", label: "Won Keywords", icon: Trophy, badge: lockedCount > 0 ? lockedCount : 0 },
     { href: "/reports", label: "Reports", icon: BarChart3, badge: 0 },
   ];
 

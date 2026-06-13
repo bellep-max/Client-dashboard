@@ -28,16 +28,21 @@ import {
   Lock,
   ArrowRight,
   PartyPopper,
+  AlertTriangle,
+  Activity,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
   listPortalBusinesses,
   listAeoPlans,
   listKeywordsAdminShape,
+  getRotationStatus,
   type PortalBusiness,
   type AeoPlan,
   type PortalKeyword,
+  type RotationStatus,
 } from "@/lib/portal-api";
+import { platformLabel } from "@/components/insights";
 import { BUSINESSES_QUERY_KEY } from "@/pages/businesses";
 import { CAMPAIGNS_QUERY_KEY } from "@/pages/campaigns";
 
@@ -121,16 +126,43 @@ export default function DashboardPage() {
     queryFn: () => listKeywordsAdminShape(),
   });
 
-  const stats = useMemo(() => {
-    const improved = (keywords ?? []).filter(
-      (k) =>
-        k.currentRanking != null &&
-        k.initialRanking != null &&
-        k.currentRanking < k.initialRanking,
-    ).length;
-    const locked = (keywords ?? []).filter((k) => k.isLocked).length;
-    return { improved, locked };
-  }, [keywords]);
+  const { data: rotation } = useQuery<RotationStatus>({
+    queryKey: ["portal", "insights", "rotation-status"],
+    queryFn: () => getRotationStatus(),
+    staleTime: 60_000,
+  });
+
+  const platformEntries = useMemo(
+    () =>
+      Object.entries(rotation?.platformAggregate ?? {}).filter(
+        ([, v]) => v.tracked > 0,
+      ),
+    [rotation],
+  );
+  const atRiskCount = rotation?.summary.atRisk ?? 0;
+
+  const improved = useMemo(
+    () =>
+      (keywords ?? []).filter(
+        (k) =>
+          k.currentRanking != null &&
+          k.initialRanking != null &&
+          k.currentRanking < k.initialRanking,
+      ).length,
+    [keywords],
+  );
+
+  // Locked/won = keywords with status='locked'. The admin-shape keywords list
+  // doesn't carry that reliably, so derive it from the rotation-status feed.
+  const lockedKeywords = useMemo(
+    () => (rotation?.keywords ?? []).filter((k) => k.status === "locked"),
+    [rotation],
+  );
+  const lockedCount = lockedKeywords.length;
+  const lockedIds = useMemo(
+    () => new Set(lockedKeywords.map((k) => k.id)),
+    [lockedKeywords],
+  );
 
   const topKeywords = useMemo(() => {
     if (!keywords) return [];
@@ -154,18 +186,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Locked keyword celebration banner */}
-      {!kwLoading && stats.locked > 0 && (
+      {lockedCount > 0 && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 px-5 py-4 flex items-start gap-4">
           <PartyPopper className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-amber-800 dark:text-amber-300">
-              {stats.locked} keyword{stats.locked > 1 ? "s" : ""} reached top 3!
+              {lockedCount} keyword{lockedCount > 1 ? "s" : ""} reached top 3!
             </p>
             <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-              {keywords
-                ?.filter((k) => k.isLocked)
-                .map((k) => k.keywordText)
-                .join(" · ")}
+              {lockedKeywords.map((k) => k.keywordText).join(" · ")}
             </p>
             <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
               These keywords are now locked and being monitored to maintain
@@ -182,6 +211,26 @@ export default function DashboardPage() {
             </Button>
           </Link>
         </div>
+      )}
+
+      {/* At-risk alert */}
+      {atRiskCount > 0 && (
+        <Link href="/optimization">
+          <div className="rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-5 py-4 flex items-start gap-4 hover:bg-red-100/60 dark:hover:bg-red-950/50 transition-colors cursor-pointer">
+            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-red-800 dark:text-red-300">
+                {atRiskCount} keyword{atRiskCount > 1 ? "s need" : " needs"}{" "}
+                attention
+              </p>
+              <p className="text-sm text-red-700 dark:text-red-400 mt-0.5">
+                These have stalled outside the top 3. See what we're doing about
+                it.
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-1" />
+          </div>
+        </Link>
       )}
 
       {/* Stat cards */}
@@ -214,14 +263,14 @@ export default function DashboardPage() {
             />
             <StatCard
               title="Keywords Improved"
-              value={stats.improved}
+              value={improved}
               sub={`vs. initial ranking`}
               icon={TrendingUp}
               iconClass="text-green-600"
             />
             <StatCard
               title="Keywords Locked"
-              value={stats.locked}
+              value={lockedCount}
               sub="Reached top 3"
               icon={Lock}
               iconClass="text-amber-500"
@@ -229,6 +278,46 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* Visibility by AI platform */}
+      {platformEntries.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5" /> Visibility by AI Platform
+              </CardTitle>
+              <CardDescription>
+                Average rank and top-3 coverage across the engines we track
+              </CardDescription>
+            </div>
+            <Link href="/optimization">
+              <Button variant="ghost" size="sm">
+                Details <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {platformEntries.map(([key, v]) => (
+                <div key={key} className="rounded-lg border border-border p-3">
+                  <p className="text-sm font-medium">{platformLabel(key)}</p>
+                  <p className="text-2xl font-bold tabular-nums mt-1">
+                    {v.avgPosition != null ? `#${v.avgPosition}` : "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">avg rank</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    <span className="text-emerald-500 font-medium">
+                      {v.top3}
+                    </span>{" "}
+                    of {v.tracked} in top 3
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Businesses overview */}
       <Card>
@@ -344,7 +433,7 @@ export default function DashboardPage() {
                   <TableRow key={kw.id} className="hover:bg-muted/40">
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-1.5">
-                        {kw.isLocked && (
+                        {lockedIds.has(kw.id) && (
                           <span title="Locked — reached top 3">
                             <Lock className="w-3 h-3 text-amber-500 shrink-0" />
                           </span>

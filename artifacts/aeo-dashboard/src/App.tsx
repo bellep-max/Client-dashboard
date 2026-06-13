@@ -25,6 +25,8 @@ import CampaignsPage from "@/pages/campaigns";
 import CampaignDetailPage from "@/pages/campaign-detail";
 import BusinessesPage from "@/pages/businesses";
 import BusinessDetailPage from "@/pages/business-detail";
+import LockedKeywordsPage from "@/pages/locked-keywords";
+import OptimizationPage from "@/pages/optimization";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
@@ -96,6 +98,14 @@ function AppRoutes() {
       <Route
         path="/campaigns/:id"
         component={() => <ProtectedRoute component={CampaignDetailPage} />}
+      />
+      <Route
+        path="/locked-keywords"
+        component={() => <ProtectedRoute component={LockedKeywordsPage} />}
+      />
+      <Route
+        path="/optimization"
+        component={() => <ProtectedRoute component={OptimizationPage} />}
       />
       <Route
         path="/reports"
