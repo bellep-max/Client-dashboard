@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import { Link, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -23,14 +23,29 @@ import {
   Loader2,
   Key,
   Lock,
+  Trophy,
+  ChevronRight,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
   getAeoPlan,
-  listKeywordsAdminShape,
+  getRotationStatus,
+  listKeywordVariants,
   type AeoPlan,
-  type PortalKeyword,
+  type RotationStatus,
+  type RotationKeyword,
 } from "@/lib/portal-api";
+import {
+  Sparkline,
+  TrendBadge,
+  RankBadge,
+  StabilityBar,
+  AtRiskBadge,
+  PlatformChips,
+  platformLabel,
+} from "@/components/insights";
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -45,13 +60,119 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
+/** Read-only AI variant alternates, lazy-loaded when a keyword row expands. */
+function VariantsPanel({ keywordId }: { keywordId: number }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["portal", "variants", keywordId],
+    queryFn: () => listKeywordVariants(keywordId),
+    staleTime: 60_000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="py-3 text-sm text-muted-foreground flex items-center gap-2">
+        <Loader2 className="w-4 h-4 animate-spin" /> Loading alternates…
+      </div>
+    );
+  }
+
+  const variants = data?.variants ?? [];
+  if (variants.length === 0) {
+    return (
+      <p className="py-3 text-sm text-muted-foreground">
+        No alternate phrasings are being tested for this keyword right now.
+      </p>
+    );
+  }
+
+  return (
+    <div className="py-3 space-y-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+        <Sparkles className="w-3.5 h-3.5" /> Alternate phrasings we're testing
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {variants.map((v) => (
+          <Badge key={v.id} variant="secondary" className="font-normal">
+            {v.variantText}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function KeywordInsightRow({ kw }: { kw: RotationKeyword }) {
+  const [open, setOpen] = useState(false);
+  const isLocked = kw.status === "locked";
+
+  return (
+    <>
+      <TableRow className="hover:bg-muted/40">
+        <TableCell className="w-8 align-top">
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label={open ? "Hide alternates" : "Show alternates"}
+          >
+            {open ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
+          </button>
+        </TableCell>
+        <TableCell className="font-medium">
+          <Link
+            href={`/keywords/${kw.id}`}
+            className="flex items-center gap-1.5 hover:underline"
+          >
+            {isLocked && (
+              <span title="Locked — top ranking achieved">
+                <Lock className="w-3 h-3 text-amber-500" />
+              </span>
+            )}
+            <span>{kw.keywordText}</span>
+          </Link>
+          {kw.atRisk && (
+            <span className="mt-1 inline-block">
+              <AtRiskBadge />
+            </span>
+          )}
+        </TableCell>
+        <TableCell>
+          <RankBadge position={kw.latestPosition} />
+        </TableCell>
+        <TableCell>
+          <PlatformChips platforms={kw.platforms} />
+        </TableCell>
+        <TableCell>
+          <TrendBadge trend={kw.trend} />
+        </TableCell>
+        <TableCell>
+          <Sparkline data={kw.sparkline} />
+        </TableCell>
+        <TableCell>
+          <StabilityBar percent={kw.stabilityPercent} />
+        </TableCell>
+      </TableRow>
+      {open && (
+        <TableRow className="bg-muted/20 hover:bg-muted/20">
+          <TableCell colSpan={7} className="px-6">
+            <VariantsPanel keywordId={kw.id} />
+          </TableCell>
+        </TableRow>
+      )}
+    </>
+  );
+}
+
 export default function CampaignDetailPage() {
   const [, params] = useRoute<{ id: string }>("/campaigns/:id");
   const idNum = Number.parseInt(params?.id ?? "", 10);
   const isValidId = !Number.isNaN(idNum);
 
   const planQueryKey = ["portal", "aeo-plan", idNum] as const;
-  const keywordsQueryKey = ["portal", "aeo-plan", idNum, "keywords"] as const;
+  const insightsQueryKey = ["portal", "aeo-plan", idNum, "insights"] as const;
 
   const {
     data: plan,
@@ -63,13 +184,13 @@ export default function CampaignDetailPage() {
     enabled: isValidId,
   });
 
-  const { data: keywords, isLoading: keywordsLoading } = useQuery<
-    PortalKeyword[]
-  >({
-    queryKey: keywordsQueryKey,
-    queryFn: () => listKeywordsAdminShape({ aeoPlanId: idNum }),
-    enabled: isValidId,
-  });
+  const { data: insights, isLoading: insightsLoading } = useQuery<RotationStatus>(
+    {
+      queryKey: insightsQueryKey,
+      queryFn: () => getRotationStatus({ aeoPlanId: idNum }),
+      enabled: isValidId,
+    },
+  );
 
   if (!isValidId) {
     return (
@@ -99,6 +220,12 @@ export default function CampaignDetailPage() {
       </div>
     );
   }
+
+  const keywords = insights?.keywords ?? [];
+  const locked = keywords.filter((k) => k.status === "locked");
+  const platformEntries = Object.entries(insights?.platformAggregate ?? {}).filter(
+    ([, v]) => v.tracked > 0,
+  );
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -203,34 +330,127 @@ export default function CampaignDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Keywords */}
+      {/* Platform breakdown strip */}
+      {platformEntries.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Rankings by AI platform</CardTitle>
+            <CardDescription>
+              Where this campaign stands across the engines we track.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {platformEntries.map(([key, v]) => (
+                <div key={key} className="rounded-lg border border-border p-3">
+                  <p className="text-sm font-medium">{platformLabel(key)}</p>
+                  <p className="text-2xl font-bold tabular-nums mt-1">
+                    {v.avgPosition != null ? `#${v.avgPosition}` : "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">avg rank</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    <span className="text-emerald-500 font-medium">{v.top3}</span>{" "}
+                    of {v.tracked} in top 3
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Won keywords for this campaign */}
+      {locked.length > 0 && (
+        <Card className="border-amber-500/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="w-4 h-4 text-amber-500" /> Won keywords
+              <Badge variant="secondary">{locked.length}</Badge>
+            </CardTitle>
+            <CardDescription>
+              Keywords in this campaign that locked into the top 3.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Keyword</TableHead>
+                  <TableHead>Won on</TableHead>
+                  <TableHead>Best rank</TableHead>
+                  <TableHead>Stability</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {locked.map((kw) => (
+                  <TableRow key={kw.id} className="hover:bg-muted/40">
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/keywords/${kw.id}`}
+                        className="flex items-center gap-1.5 hover:underline"
+                      >
+                        <Trophy className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        {kw.keywordText}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      {kw.wonPlatform ? (
+                        <Badge variant="outline" className="text-xs">
+                          {platformLabel(kw.wonPlatform)}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <RankBadge position={kw.wonPosition} />
+                    </TableCell>
+                    <TableCell>
+                      <StabilityBar percent={kw.stabilityPercent} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Keywords with insights */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="w-5 h-5" /> Keywords
           </CardTitle>
-          <CardDescription>Keywords scoped to this campaign.</CardDescription>
+          <CardDescription>
+            Keywords scoped to this campaign. Expand a row to see the alternate
+            phrasings we're testing.
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-8" />
                 <TableHead>Keyword</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Run</TableHead>
+                <TableHead>Current</TableHead>
+                <TableHead>Platforms</TableHead>
+                <TableHead>Trend</TableHead>
+                <TableHead>History</TableHead>
+                <TableHead>Stability</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {keywordsLoading ? (
+              {insightsLoading ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="h-20 text-center">
+                  <TableCell colSpan={7} className="h-20 text-center">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
-              ) : !keywords || keywords.length === 0 ? (
+              ) : keywords.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={3}
+                    colSpan={7}
                     className="text-center py-6 text-muted-foreground text-sm"
                   >
                     No keywords are linked to this campaign yet. Keywords are
@@ -238,34 +458,7 @@ export default function CampaignDetailPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                keywords.map((kw) => {
-                  const isLocked = kw.isLocked;
-
-                  return (
-                    <TableRow key={kw.id} className="hover:bg-muted/40">
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-1.5">
-                          {isLocked && (
-                            <span title="Locked — top ranking achieved">
-                              <Lock className="w-3 h-3 text-amber-500" />
-                            </span>
-                          )}
-                          <span>{kw.keywordText}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize text-xs">
-                          {kw.status ?? "—"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {kw.lastRunAt
-                          ? format(new Date(kw.lastRunAt), "MMM d, yyyy")
-                          : "—"}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                keywords.map((kw) => <KeywordInsightRow key={kw.id} kw={kw} />)
               )}
             </TableBody>
           </Table>

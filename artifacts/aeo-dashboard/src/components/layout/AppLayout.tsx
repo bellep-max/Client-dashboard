@@ -11,6 +11,8 @@ import {
   Building2,
   User,
   Megaphone,
+  Trophy,
+  Activity,
 } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,9 +46,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const lockedCount = (keywords ?? []).filter((k) => k.isLocked).length;
 
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: lockedCount > 0 ? lockedCount : 0 },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: 0 },
     { href: "/businesses", label: "Businesses", icon: Building2, badge: 0 },
     { href: "/campaigns", label: "Campaigns", icon: Megaphone, badge: 0 },
+    { href: "/optimization", label: "Optimization", icon: Activity, badge: 0 },
+    { href: "/locked-keywords", label: "Won Keywords", icon: Trophy, badge: lockedCount > 0 ? lockedCount : 0 },
     { href: "/reports", label: "Reports", icon: BarChart3, badge: 0 },
   ];
 

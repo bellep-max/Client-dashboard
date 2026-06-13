@@ -132,10 +132,10 @@ export default function KeywordDetailPage() {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">
             {keyword.keywordText}
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <div className="text-muted-foreground text-sm flex flex-wrap items-center gap-x-1">
             {keyword.campaignName ? (
               <>
-                Campaign:{" "}
+                <span>Campaign:</span>
                 {keyword.aeoPlanId ? (
                   <Link href={`/campaigns/${keyword.aeoPlanId}`}>
                     <span className="text-primary hover:underline">
@@ -143,16 +143,16 @@ export default function KeywordDetailPage() {
                     </span>
                   </Link>
                 ) : (
-                  keyword.campaignName
-                )}{" "}
-                ·{" "}
+                  <span>{keyword.campaignName}</span>
+                )}
+                <span>·</span>
               </>
             ) : null}
-            Status:{" "}
-            <Badge variant="outline" className="capitalize ml-1">
+            <span>Status:</span>
+            <Badge variant="outline" className="capitalize">
               {keyword.status ?? "-"}
             </Badge>
-          </p>
+          </div>
         </div>
       </div>
 

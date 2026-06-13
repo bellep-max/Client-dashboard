@@ -325,3 +325,125 @@ export interface PortalReport {
 
 export const listPortalReports = (): Promise<PortalReport[]> =>
   request<PortalReport[]>("/api/businesses/me/reports");
+
+// ---------------------------------------------------------------------------
+// Insights (read-only optimization transparency)
+// Backed by /api/portal/insights/* and /api/portal/keywords/:id/variants.
+// All responses are scoped to the authenticated customer's own client.
+// ---------------------------------------------------------------------------
+
+export type RankTrend = "improving" | "steady" | "declining";
+
+export interface PlatformRank {
+  position: number | null;
+  date: string | null;
+}
+
+export interface LockedKeyword {
+  id: number;
+  keywordText: string;
+  campaignName: string | null;
+  businessName: string | null;
+  aeoPlanId: number | null;
+  businessId: number | null;
+  replacementSuggestion: string | null;
+  archiveReason: string | null;
+  wonPlatform: string | null;
+  wonPosition: number | null;
+  wonAt: string | null;
+  stabilityPercent: number;
+  platforms: Record<string, PlatformRank>;
+}
+
+export interface RotationKeyword {
+  id: number;
+  keywordText: string;
+  status: string | null;
+  isActive: boolean;
+  archivedAt: string | null;
+  archiveReason: string | null;
+  replacementSuggestion: string | null;
+  aeoPlanId: number | null;
+  businessId: number | null;
+  campaignName: string | null;
+  businessName: string | null;
+  latestPosition: number | null;
+  latestDate: string | null;
+  platforms: Record<string, PlatformRank>;
+  sparkline: number[];
+  totalRuns: number;
+  top3Runs: number;
+  stabilityPercent: number;
+  trend: RankTrend;
+  atRisk: boolean;
+  stallingSince: string | null;
+  wonPlatform: string | null;
+  wonPosition: number | null;
+  wonAt: string | null;
+}
+
+export interface PlatformAggregate {
+  tracked: number;
+  top3: number;
+  avgPosition: number | null;
+}
+
+export interface RotationTimelineEvent {
+  type: "locked" | "archived";
+  keywordId: number;
+  keywordText: string;
+  campaignName: string | null;
+  platform?: string | null;
+  position?: number | null;
+  date: string;
+  detail: string | null;
+  replacement?: string | null;
+}
+
+export interface RotationStatus {
+  summary: { total: number; locked: number; active: number; atRisk: number };
+  platformAggregate: Record<string, PlatformAggregate>;
+  keywords: RotationKeyword[];
+  timeline: RotationTimelineEvent[];
+}
+
+export interface KeywordVariant {
+  id: number;
+  keywordId: number;
+  variantText: string;
+  isActive: boolean;
+  weekOf: string | null;
+  sourceModel: string | null;
+  timesUsed: number;
+  lastUsedAt: string | null;
+  generatedAt: string | null;
+  expiresAt: string | null;
+}
+
+type InsightFilters = { aeoPlanId?: number; businessId?: number };
+
+function insightQuery(params: InsightFilters): string {
+  const search = new URLSearchParams();
+  if (params.aeoPlanId != null) search.set("aeoPlanId", String(params.aeoPlanId));
+  if (params.businessId != null)
+    search.set("businessId", String(params.businessId));
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export const listLockedKeywords = (
+  params: InsightFilters = {},
+): Promise<LockedKeyword[]> =>
+  request<LockedKeyword[]>(`/api/insights/locked-keywords${insightQuery(params)}`);
+
+export const getRotationStatus = (
+  params: InsightFilters = {},
+): Promise<RotationStatus> =>
+  request<RotationStatus>(`/api/insights/rotation-status${insightQuery(params)}`);
+
+export const listKeywordVariants = (
+  keywordId: number,
+): Promise<{ variants: KeywordVariant[]; total: number }> =>
+  request<{ variants: KeywordVariant[]; total: number }>(
+    `/api/keywords/${keywordId}/variants`,
+  );

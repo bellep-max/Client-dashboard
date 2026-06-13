@@ -28,16 +28,21 @@ import {
   Lock,
   ArrowRight,
   PartyPopper,
+  AlertTriangle,
+  Activity,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
   listPortalBusinesses,
   listAeoPlans,
   listKeywordsAdminShape,
+  getRotationStatus,
   type PortalBusiness,
   type AeoPlan,
   type PortalKeyword,
+  type RotationStatus,
 } from "@/lib/portal-api";
+import { platformLabel } from "@/components/insights";
 import { BUSINESSES_QUERY_KEY } from "@/pages/businesses";
 import { CAMPAIGNS_QUERY_KEY } from "@/pages/campaigns";
 
@@ -121,6 +126,21 @@ export default function DashboardPage() {
     queryFn: () => listKeywordsAdminShape(),
   });
 
+  const { data: rotation } = useQuery<RotationStatus>({
+    queryKey: ["portal", "insights", "rotation-status"],
+    queryFn: () => getRotationStatus(),
+    staleTime: 60_000,
+  });
+
+  const platformEntries = useMemo(
+    () =>
+      Object.entries(rotation?.platformAggregate ?? {}).filter(
+        ([, v]) => v.tracked > 0,
+      ),
+    [rotation],
+  );
+  const atRiskCount = rotation?.summary.atRisk ?? 0;
+
   const stats = useMemo(() => {
     const improved = (keywords ?? []).filter(
       (k) =>
@@ -184,6 +204,26 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* At-risk alert */}
+      {atRiskCount > 0 && (
+        <Link href="/optimization">
+          <div className="rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-5 py-4 flex items-start gap-4 hover:bg-red-100/60 dark:hover:bg-red-950/50 transition-colors cursor-pointer">
+            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-red-800 dark:text-red-300">
+                {atRiskCount} keyword{atRiskCount > 1 ? "s need" : " needs"}{" "}
+                attention
+              </p>
+              <p className="text-sm text-red-700 dark:text-red-400 mt-0.5">
+                These have stalled outside the top 3. See what we're doing about
+                it.
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-1" />
+          </div>
+        </Link>
+      )}
+
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {loading ? (
@@ -229,6 +269,46 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* Visibility by AI platform */}
+      {platformEntries.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5" /> Visibility by AI Platform
+              </CardTitle>
+              <CardDescription>
+                Average rank and top-3 coverage across the engines we track
+              </CardDescription>
+            </div>
+            <Link href="/optimization">
+              <Button variant="ghost" size="sm">
+                Details <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {platformEntries.map(([key, v]) => (
+                <div key={key} className="rounded-lg border border-border p-3">
+                  <p className="text-sm font-medium">{platformLabel(key)}</p>
+                  <p className="text-2xl font-bold tabular-nums mt-1">
+                    {v.avgPosition != null ? `#${v.avgPosition}` : "—"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">avg rank</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    <span className="text-emerald-500 font-medium">
+                      {v.top3}
+                    </span>{" "}
+                    of {v.tracked} in top 3
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Businesses overview */}
       <Card>
