@@ -141,16 +141,28 @@ export default function DashboardPage() {
   );
   const atRiskCount = rotation?.summary.atRisk ?? 0;
 
-  const stats = useMemo(() => {
-    const improved = (keywords ?? []).filter(
-      (k) =>
-        k.currentRanking != null &&
-        k.initialRanking != null &&
-        k.currentRanking < k.initialRanking,
-    ).length;
-    const locked = (keywords ?? []).filter((k) => k.isLocked).length;
-    return { improved, locked };
-  }, [keywords]);
+  const improved = useMemo(
+    () =>
+      (keywords ?? []).filter(
+        (k) =>
+          k.currentRanking != null &&
+          k.initialRanking != null &&
+          k.currentRanking < k.initialRanking,
+      ).length,
+    [keywords],
+  );
+
+  // Locked/won = keywords with status='locked'. The admin-shape keywords list
+  // doesn't carry that reliably, so derive it from the rotation-status feed.
+  const lockedKeywords = useMemo(
+    () => (rotation?.keywords ?? []).filter((k) => k.status === "locked"),
+    [rotation],
+  );
+  const lockedCount = lockedKeywords.length;
+  const lockedIds = useMemo(
+    () => new Set(lockedKeywords.map((k) => k.id)),
+    [lockedKeywords],
+  );
 
   const topKeywords = useMemo(() => {
     if (!keywords) return [];
@@ -174,18 +186,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Locked keyword celebration banner */}
-      {!kwLoading && stats.locked > 0 && (
+      {lockedCount > 0 && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 px-5 py-4 flex items-start gap-4">
           <PartyPopper className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-amber-800 dark:text-amber-300">
-              {stats.locked} keyword{stats.locked > 1 ? "s" : ""} reached top 3!
+              {lockedCount} keyword{lockedCount > 1 ? "s" : ""} reached top 3!
             </p>
             <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-              {keywords
-                ?.filter((k) => k.isLocked)
-                .map((k) => k.keywordText)
-                .join(" · ")}
+              {lockedKeywords.map((k) => k.keywordText).join(" · ")}
             </p>
             <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
               These keywords are now locked and being monitored to maintain
@@ -254,14 +263,14 @@ export default function DashboardPage() {
             />
             <StatCard
               title="Keywords Improved"
-              value={stats.improved}
+              value={improved}
               sub={`vs. initial ranking`}
               icon={TrendingUp}
               iconClass="text-green-600"
             />
             <StatCard
               title="Keywords Locked"
-              value={stats.locked}
+              value={lockedCount}
               sub="Reached top 3"
               icon={Lock}
               iconClass="text-amber-500"
@@ -424,7 +433,7 @@ export default function DashboardPage() {
                   <TableRow key={kw.id} className="hover:bg-muted/40">
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-1.5">
-                        {kw.isLocked && (
+                        {lockedIds.has(kw.id) && (
                           <span title="Locked — reached top 3">
                             <Lock className="w-3 h-3 text-amber-500 shrink-0" />
                           </span>

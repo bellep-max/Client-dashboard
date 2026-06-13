@@ -17,7 +17,7 @@ import {
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { listKeywordsAdminShape, type PortalKeyword } from "@/lib/portal-api";
+import { getRotationStatus, type RotationStatus } from "@/lib/portal-api";
 
 function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
@@ -38,12 +38,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { user, signOut } = useAuth();
 
-  const { data: keywords } = useQuery<PortalKeyword[]>({
-    queryKey: ["portal", "keywords"],
-    queryFn: () => listKeywordsAdminShape(),
+  const { data: rotation } = useQuery<RotationStatus>({
+    queryKey: ["portal", "insights", "rotation-status"],
+    queryFn: () => getRotationStatus(),
     staleTime: 60_000,
   });
-  const lockedCount = (keywords ?? []).filter((k) => k.isLocked).length;
+  const lockedCount = rotation?.summary.locked ?? 0;
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: 0 },
