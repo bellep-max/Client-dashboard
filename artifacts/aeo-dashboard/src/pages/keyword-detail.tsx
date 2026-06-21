@@ -19,15 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ArrowLeft, Loader2, Link2, BarChart3 } from "lucide-react";
+import { ArrowLeft, Loader2, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import {
   getKeywordAdminShape,
@@ -60,20 +52,13 @@ export default function KeywordDetailPage() {
     enabled: isValidId,
   });
 
-  const { data: reports, isLoading: reportsLoading } = useQuery<RankingReport[]>({
+  const { data: reports, isLoading: reportsLoading } = useQuery<
+    RankingReport[]
+  >({
     queryKey: ["portal", "keyword", idNum, "ranking-reports"],
     queryFn: () => listRankingReports({ keywordId: idNum }),
     enabled: isValidId,
   });
-
-  const sortedReports = useMemo(() => {
-    if (!reports) return [] as RankingReport[];
-    return [...reports].sort((a, b) => {
-      const ad = a.date ?? a.createdAt;
-      const bd = b.date ?? b.createdAt;
-      return new Date(bd).getTime() - new Date(ad).getTime();
-    });
-  }, [reports]);
 
   const chartData = useMemo(() => {
     if (!reports) return [] as Array<{ date: string; position: number }>;
@@ -188,9 +173,7 @@ export default function KeywordDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl font-semibold">
-              {reports?.length ?? 0}
-            </div>
+            <div className="text-xl font-semibold">{reports?.length ?? 0}</div>
           </CardContent>
         </Card>
       </div>
@@ -211,64 +194,28 @@ export default function KeywordDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Link2 className="w-5 h-5" /> Links
-          </CardTitle>
-          <CardDescription>
-            Backlinks and citations associated with this keyword.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {keyword.links.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No links recorded.</p>
-          ) : (
-            <ul className="space-y-2">
-              {keyword.links.map((l) => (
-                <li
-                  key={l.id}
-                  className="flex items-start justify-between gap-3 p-3 rounded-md border bg-card"
-                >
-                  <div className="min-w-0 flex-1">
-                    <a
-                      href={l.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium text-primary hover:underline break-all"
-                    >
-                      {l.url}
-                    </a>
-                    {l.description && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {l.description}
-                      </p>
-                    )}
-                  </div>
-                  {l.linkType && (
-                    <Badge variant="outline" className="capitalize shrink-0">
-                      {l.linkType}
-                    </Badge>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5" /> Ranking history
           </CardTitle>
           <CardDescription>
-            Every recorded audit for this keyword. Lower position = better.
+            Ranking trend for this keyword. Lower position = better.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {chartData.length >= 2 && (
+          {reportsLoading ? (
+            <div className="flex justify-center py-6">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : chartData.length >= 2 ? (
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 8, right: 16, bottom: 8, left: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    className="stroke-muted"
+                  />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                   <YAxis
                     reversed
@@ -294,63 +241,11 @@ export default function KeywordDetailPage() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          )}
-
-          {reportsLoading ? (
-            <div className="flex justify-center py-6">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
-            </div>
-          ) : sortedReports.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">
-              No ranking history yet. Once an audit completes this
-              table will populate.
-            </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Platform</TableHead>
-                  <TableHead className="text-right">Position</TableHead>
-                  <TableHead>Maps</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedReports.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-medium">
-                      {formatDate(r.date ?? r.createdAt)}
-                    </TableCell>
-                    <TableCell className="capitalize">
-                      {r.platform ?? "-"}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {r.rankingPosition ?? "-"}
-                    </TableCell>
-                    <TableCell>
-                      {r.mapsPresence == null ? (
-                        <span className="text-muted-foreground text-xs">-</span>
-                      ) : r.mapsPresence ? (
-                        <Badge variant="default" className="bg-green-500/20 text-green-600 hover:bg-green-500/20">
-                          Yes
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">No</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={r.status === "success" ? "default" : "outline"}
-                        className="capitalize"
-                      >
-                        {r.status ?? "-"}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Not enough ranking history yet to chart. The trend will appear
+              here once more audits complete.
+            </p>
           )}
         </CardContent>
       </Card>
