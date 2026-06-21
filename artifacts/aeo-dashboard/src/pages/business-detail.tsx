@@ -1,6 +1,5 @@
-import React, { useState } from "react";
 import { Link, useRoute } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Card,
   CardContent,
@@ -8,16 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,17 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Loader2, Megaphone, Plus, Check } from "lucide-react";
+import { ArrowLeft, Loader2, Megaphone } from "lucide-react";
 import { format } from "date-fns";
-import { toast } from "sonner";
 import {
   getPortalBusiness,
   listAeoPlans,
-  createAeoPlan,
   type PortalBusiness,
   type AeoPlan,
 } from "@/lib/portal-api";
-import { CAMPAIGNS_QUERY_KEY } from "@/pages/campaigns";
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -53,38 +39,10 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-const PLANS = [
-  {
-    id: "Starter",
-    label: "Starter",
-    price: "$499/mo",
-    features: ["1 campaign", "Up to 5 keywords", "Performance reports"],
-  },
-  {
-    id: "Growth",
-    label: "Growth",
-    price: "$999/mo",
-    features: ["1 campaign", "Up to 10 keywords", "Performance reports", "Priority support"],
-  },
-  {
-    id: "Pro",
-    label: "Pro",
-    price: "$1,999/mo",
-    features: ["1 campaign", "Up to 20 keywords", "Weekly reports", "Dedicated account manager"],
-  },
-];
-
 export default function BusinessDetailPage() {
   const [, params] = useRoute<{ id: string }>("/businesses/:id");
   const idNum = Number.parseInt(params?.id ?? "", 10);
   const isValidId = !Number.isNaN(idNum);
-  const queryClient = useQueryClient();
-
-  const [purchaseOpen, setPurchaseOpen] = useState(false);
-  const [step, setStep] = useState<1 | 2>(1);
-  const [selectedPlan, setSelectedPlan] = useState("Growth");
-  const [campaignName, setCampaignName] = useState("");
-  const [searchAddress, setSearchAddress] = useState("");
 
   const businessQueryKey = ["portal", "business", idNum] as const;
   const campaignsQueryKey = ["portal", "business", idNum, "campaigns"] as const;
@@ -105,35 +63,6 @@ export default function BusinessDetailPage() {
     enabled: isValidId,
     select: (rows) => rows.filter((p) => p.businessId === idNum),
   });
-
-  const createMutation = useMutation({
-    mutationFn: () =>
-      createAeoPlan({
-        businessId: idNum,
-        planType: selectedPlan,
-        name: campaignName.trim() || null,
-        searchAddress: searchAddress.trim() || null,
-      }),
-    onSuccess: () => {
-      toast.success("Campaign created! Your admin will add keywords shortly.");
-      setPurchaseOpen(false);
-      setStep(1);
-      setCampaignName("");
-      setSearchAddress("");
-      setSelectedPlan("Growth");
-      queryClient.invalidateQueries({ queryKey: CAMPAIGNS_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: campaignsQueryKey });
-    },
-    onError: (err: Error) => toast.error(err.message || "Failed to create campaign"),
-  });
-
-  function openPurchase() {
-    setStep(1);
-    setSelectedPlan("Growth");
-    setCampaignName("");
-    setSearchAddress("");
-    setPurchaseOpen(true);
-  }
 
   if (!isValidId) {
     return (
@@ -198,7 +127,10 @@ export default function BusinessDetailPage() {
             <Field label="GMB URL" value={business.gmbUrl} />
             <Field label="Website" value={business.websiteUrl} />
             <div className="md:col-span-2">
-              <Field label="Published (GMB) Address" value={business.publishedAddress} />
+              <Field
+                label="Published (GMB) Address"
+                value={business.publishedAddress}
+              />
             </div>
             <Field label="City" value={business.city} />
             <Field label="State" value={business.state} />
@@ -215,122 +147,16 @@ export default function BusinessDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Purchase dialog */}
-      <Dialog open={purchaseOpen} onOpenChange={setPurchaseOpen}>
-        <DialogContent className="max-w-2xl">
-          {step === 1 ? (
-            <>
-              <DialogHeader>
-                <DialogTitle>Choose a Plan</DialogTitle>
-                <DialogDescription>
-                  Each campaign targets one search address. You can add multiple campaigns to one business.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-2">
-                {PLANS.map((plan) => (
-                  <button
-                    key={plan.id}
-                    onClick={() => setSelectedPlan(plan.id)}
-                    className={`border rounded-xl p-4 text-left transition-all ${
-                      selectedPlan === plan.id
-                        ? "border-primary bg-primary/5 ring-2 ring-primary"
-                        : "border-border hover:border-primary/40"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-sm">{plan.label}</span>
-                      {selectedPlan === plan.id && (
-                        <Check className="w-4 h-4 text-primary" />
-                      )}
-                    </div>
-                    <div className="text-lg font-bold text-primary mb-3">{plan.price}</div>
-                    <ul className="space-y-1">
-                      {plan.features.map((f) => (
-                        <li key={f} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                          <Check className="w-3 h-3 text-green-500 shrink-0" /> {f}
-                        </li>
-                      ))}
-                    </ul>
-                  </button>
-                ))}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setPurchaseOpen(false)}>Cancel</Button>
-                <Button onClick={() => setStep(2)}>
-                  Continue with {selectedPlan} →
-                </Button>
-              </DialogFooter>
-            </>
-          ) : (
-            <>
-              <DialogHeader>
-                <DialogTitle>Configure Campaign</DialogTitle>
-                <DialogDescription>
-                  Set the search address — this is where your AEO campaign will target rankings. It cannot be changed without resetting the initial report.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-2">
-                <div className="rounded-lg border bg-muted/30 px-4 py-2 flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Selected plan</span>
-                  <Badge variant="outline" className="capitalize">{selectedPlan}</Badge>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="campaign-name">Campaign Name <span className="text-muted-foreground">(optional)</span></Label>
-                  <Input
-                    id="campaign-name"
-                    placeholder="e.g. Brooklyn — Spring 2026"
-                    value={campaignName}
-                    onChange={(e) => setCampaignName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="search-address">
-                    Search Address <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="search-address"
-                    placeholder="e.g. Brooklyn, NY 11201"
-                    value={searchAddress}
-                    onChange={(e) => setSearchAddress(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    This is the geographic location used for AI ranking searches. Changing it later resets your initial report.
-                  </p>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setStep(1)}>← Back</Button>
-                <Button
-                  onClick={() => createMutation.mutate()}
-                  disabled={createMutation.isPending || !searchAddress.trim()}
-                >
-                  {createMutation.isPending ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</>
-                  ) : (
-                    "Confirm & Purchase"
-                  )}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {/* Campaigns */}
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between space-y-0">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Megaphone className="w-5 h-5" /> Campaigns
-              {campaigns && campaigns.length > 0 && (
-                <Badge variant="secondary">{campaigns.length}</Badge>
-              )}
-            </CardTitle>
-            <CardDescription>AEO plans scoped to this business.</CardDescription>
-          </div>
-          <Button size="sm" onClick={openPurchase}>
-            <Plus className="w-4 h-4 mr-1" /> Add Campaign
-          </Button>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Megaphone className="w-5 h-5" /> Campaigns
+            {campaigns && campaigns.length > 0 && (
+              <Badge variant="secondary">{campaigns.length}</Badge>
+            )}
+          </CardTitle>
+          <CardDescription>AEO plans scoped to this business.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -361,16 +187,22 @@ export default function BusinessDetailPage() {
                 </TableRow>
               ) : (
                 campaigns.map((plan) => (
-                  <TableRow key={plan.id} className="cursor-pointer hover:bg-muted/40">
+                  <TableRow
+                    key={plan.id}
+                    className="cursor-pointer hover:bg-muted/40"
+                  >
                     <TableCell>
                       <Link href={`/campaigns/${plan.id}`}>
                         <span className="font-medium text-primary hover:underline">
-                          {plan.name?.trim() ? plan.name : `Campaign #${plan.id}`}
+                          {plan.name?.trim()
+                            ? plan.name
+                            : `Campaign #${plan.id}`}
                         </span>
                       </Link>
                       {plan.keywordCount != null && plan.keywordCount > 0 && (
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {plan.keywordCount} active keyword{plan.keywordCount !== 1 ? "s" : ""}
+                          {plan.keywordCount} active keyword
+                          {plan.keywordCount !== 1 ? "s" : ""}
                         </p>
                       )}
                     </TableCell>
@@ -379,7 +211,9 @@ export default function BusinessDetailPage() {
                         {plan.planType ?? "—"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">—</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      —
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {(plan as any).createdBy?.trim() || "—"}
                     </TableCell>
@@ -401,7 +235,6 @@ export default function BusinessDetailPage() {
           </Table>
         </CardContent>
       </Card>
-
     </div>
   );
 }
