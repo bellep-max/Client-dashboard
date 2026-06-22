@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -18,21 +17,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ArrowLeft,
-  Loader2,
-  Key,
-  Lock,
-  Trophy,
-  ChevronRight,
-  ChevronDown,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, Loader2, Key, Lock, Trophy } from "lucide-react";
 import { format } from "date-fns";
 import {
   getAeoPlan,
   getRotationStatus,
-  listKeywordVariants,
   type AeoPlan,
   type RotationStatus,
   type RotationKeyword,
@@ -60,109 +49,45 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-/** Read-only AI variant alternates, lazy-loaded when a keyword row expands. */
-function VariantsPanel({ keywordId }: { keywordId: number }) {
-  const { data, isLoading } = useQuery({
-    queryKey: ["portal", "variants", keywordId],
-    queryFn: () => listKeywordVariants(keywordId),
-    staleTime: 60_000,
-  });
-
-  if (isLoading) {
-    return (
-      <div className="py-3 text-sm text-muted-foreground flex items-center gap-2">
-        <Loader2 className="w-4 h-4 animate-spin" /> Loading alternates…
-      </div>
-    );
-  }
-
-  const variants = data?.variants ?? [];
-  if (variants.length === 0) {
-    return (
-      <p className="py-3 text-sm text-muted-foreground">
-        No alternate phrasings are being tested for this keyword right now.
-      </p>
-    );
-  }
-
-  return (
-    <div className="py-3 space-y-2">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-        <Sparkles className="w-3.5 h-3.5" /> Alternate phrasings we're testing
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {variants.map((v) => (
-          <Badge key={v.id} variant="secondary" className="font-normal">
-            {v.variantText}
-          </Badge>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function KeywordInsightRow({ kw }: { kw: RotationKeyword }) {
-  const [open, setOpen] = useState(false);
   const isLocked = kw.status === "locked";
 
   return (
-    <>
-      <TableRow className="hover:bg-muted/40">
-        <TableCell className="w-8 align-top">
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="text-muted-foreground hover:text-foreground"
-            aria-label={open ? "Hide alternates" : "Show alternates"}
-          >
-            {open ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-        </TableCell>
-        <TableCell className="font-medium">
-          <Link
-            href={`/keywords/${kw.id}`}
-            className="flex items-center gap-1.5 hover:underline"
-          >
-            {isLocked && (
-              <span title="Locked — top ranking achieved">
-                <Lock className="w-3 h-3 text-amber-500" />
-              </span>
-            )}
-            <span>{kw.keywordText}</span>
-          </Link>
-          {kw.atRisk && (
-            <span className="mt-1 inline-block">
-              <AtRiskBadge />
+    <TableRow className="hover:bg-muted/40">
+      <TableCell className="font-medium">
+        <Link
+          href={`/keywords/${kw.id}`}
+          className="flex items-center gap-1.5 hover:underline"
+        >
+          {isLocked && (
+            <span title="Locked — top ranking achieved">
+              <Lock className="w-3 h-3 text-amber-500" />
             </span>
           )}
-        </TableCell>
-        <TableCell>
-          <RankBadge position={kw.latestPosition} />
-        </TableCell>
-        <TableCell>
-          <PlatformChips platforms={kw.platforms} />
-        </TableCell>
-        <TableCell>
-          <TrendBadge trend={kw.trend} />
-        </TableCell>
-        <TableCell>
-          <Sparkline data={kw.sparkline} />
-        </TableCell>
-        <TableCell>
-          <StabilityBar percent={kw.stabilityPercent} />
-        </TableCell>
-      </TableRow>
-      {open && (
-        <TableRow className="bg-muted/20 hover:bg-muted/20">
-          <TableCell colSpan={7} className="px-6">
-            <VariantsPanel keywordId={kw.id} />
-          </TableCell>
-        </TableRow>
-      )}
-    </>
+          <span>{kw.keywordText}</span>
+        </Link>
+        {kw.atRisk && (
+          <span className="mt-1 inline-block">
+            <AtRiskBadge />
+          </span>
+        )}
+      </TableCell>
+      <TableCell>
+        <RankBadge position={kw.latestPosition} />
+      </TableCell>
+      <TableCell>
+        <PlatformChips platforms={kw.platforms} />
+      </TableCell>
+      <TableCell>
+        <TrendBadge trend={kw.trend} />
+      </TableCell>
+      <TableCell>
+        <Sparkline data={kw.sparkline} />
+      </TableCell>
+      <TableCell>
+        <StabilityBar percent={kw.stabilityPercent} />
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -423,16 +348,12 @@ export default function CampaignDetailPage() {
           <CardTitle className="flex items-center gap-2">
             <Key className="w-5 h-5" /> Keywords
           </CardTitle>
-          <CardDescription>
-            Keywords scoped to this campaign. Expand a row to see the alternate
-            phrasings we're testing.
-          </CardDescription>
+          <CardDescription>Keywords scoped to this campaign.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-8" />
                 <TableHead>Keyword</TableHead>
                 <TableHead>Current</TableHead>
                 <TableHead>Platforms</TableHead>
@@ -444,14 +365,14 @@ export default function CampaignDetailPage() {
             <TableBody>
               {insightsLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-20 text-center">
+                  <TableCell colSpan={6} className="h-20 text-center">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
               ) : keywords.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={6}
                     className="text-center py-6 text-muted-foreground text-sm"
                   >
                     No keywords are linked to this campaign yet. Keywords are
