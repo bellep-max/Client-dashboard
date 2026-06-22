@@ -28,7 +28,6 @@ import {
   Lock,
   ArrowRight,
   PartyPopper,
-  AlertTriangle,
   Activity,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -139,7 +138,6 @@ export default function DashboardPage() {
       ),
     [rotation],
   );
-  const atRiskCount = rotation?.summary.atRisk ?? 0;
 
   const improved = useMemo(
     () =>
@@ -211,26 +209,6 @@ export default function DashboardPage() {
             </Button>
           </Link>
         </div>
-      )}
-
-      {/* At-risk alert */}
-      {atRiskCount > 0 && (
-        <Link href="/optimization">
-          <div className="rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 px-5 py-4 flex items-start gap-4 hover:bg-red-100/60 dark:hover:bg-red-950/50 transition-colors cursor-pointer">
-            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-red-800 dark:text-red-300">
-                {atRiskCount} keyword{atRiskCount > 1 ? "s need" : " needs"}{" "}
-                attention
-              </p>
-              <p className="text-sm text-red-700 dark:text-red-400 mt-0.5">
-                These have stalled outside the top 3. See what we're doing about
-                it.
-              </p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-1" />
-          </div>
-        </Link>
       )}
 
       {/* Stat cards */}
