@@ -199,7 +199,7 @@ export default function DashboardPage() {
               their top position.
             </p>
           </div>
-          <Link href="/campaigns">
+          <Link href="/businesses">
             <Button
               size="sm"
               variant="outline"
@@ -373,9 +373,9 @@ export default function DashboardPage() {
               Current rank vs. initial — lower is better
             </CardDescription>
           </div>
-          <Link href="/campaigns">
+          <Link href="/businesses">
             <Button variant="ghost" size="sm">
-              View campaigns <ArrowRight className="w-4 h-4 ml-1" />
+              View businesses <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           </Link>
         </CardHeader>

@@ -9,7 +9,6 @@ import {
   LogOut,
   Building2,
   User,
-  Megaphone,
   Trophy,
   Activity,
   ChevronDown,
@@ -106,7 +105,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, badge: 0 },
     { href: "/businesses", label: "Businesses", icon: Building2, badge: 0 },
-    { href: "/campaigns", label: "Campaigns", icon: Megaphone, badge: 0 },
     { href: "/optimization", label: "Optimization", icon: Activity, badge: 0 },
     {
       href: "/locked-keywords",

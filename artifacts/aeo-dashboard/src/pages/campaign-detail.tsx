@@ -184,13 +184,12 @@ export default function CampaignDetailPage() {
     enabled: isValidId,
   });
 
-  const { data: insights, isLoading: insightsLoading } = useQuery<RotationStatus>(
-    {
+  const { data: insights, isLoading: insightsLoading } =
+    useQuery<RotationStatus>({
       queryKey: insightsQueryKey,
       queryFn: () => getRotationStatus({ aeoPlanId: idNum }),
       enabled: isValidId,
-    },
-  );
+    });
 
   if (!isValidId) {
     return (
@@ -211,9 +210,9 @@ export default function CampaignDetailPage() {
   if (planError || !plan) {
     return (
       <div className="p-6 max-w-3xl mx-auto space-y-4">
-        <Link href="/campaigns">
+        <Link href="/businesses">
           <Button variant="ghost" size="sm">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to campaigns
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to businesses
           </Button>
         </Link>
         <p className="text-destructive">Could not load this campaign.</p>
@@ -223,16 +222,16 @@ export default function CampaignDetailPage() {
 
   const keywords = insights?.keywords ?? [];
   const locked = keywords.filter((k) => k.status === "locked");
-  const platformEntries = Object.entries(insights?.platformAggregate ?? {}).filter(
-    ([, v]) => v.tracked > 0,
-  );
+  const platformEntries = Object.entries(
+    insights?.platformAggregate ?? {},
+  ).filter(([, v]) => v.tracked > 0);
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 min-w-0">
-        <Link href="/campaigns">
-          <Button variant="ghost" size="icon" aria-label="Back to campaigns">
+        <Link href="/businesses">
+          <Button variant="ghost" size="icon" aria-label="Back to businesses">
             <ArrowLeft className="w-5 h-5" />
           </Button>
         </Link>
@@ -349,7 +348,9 @@ export default function CampaignDetailPage() {
                   </p>
                   <p className="text-xs text-muted-foreground">avg rank</p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    <span className="text-emerald-500 font-medium">{v.top3}</span>{" "}
+                    <span className="text-emerald-500 font-medium">
+                      {v.top3}
+                    </span>{" "}
                     of {v.tracked} in top 3
                   </p>
                 </div>

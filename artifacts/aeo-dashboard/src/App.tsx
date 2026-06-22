@@ -21,7 +21,6 @@ import ReportsPage from "@/pages/reports";
 import SettingsPage from "@/pages/settings";
 import OnboardingPage from "@/pages/onboarding";
 import SignInPage from "@/pages/sign-in";
-import CampaignsPage from "@/pages/campaigns";
 import CampaignDetailPage from "@/pages/campaign-detail";
 import BusinessesPage from "@/pages/businesses";
 import BusinessDetailPage from "@/pages/business-detail";
@@ -90,10 +89,6 @@ function AppRoutes() {
       <Route
         path="/businesses/:id"
         component={() => <ProtectedRoute component={BusinessDetailPage} />}
-      />
-      <Route
-        path="/campaigns"
-        component={() => <ProtectedRoute component={CampaignsPage} />}
       />
       <Route
         path="/campaigns/:id"
