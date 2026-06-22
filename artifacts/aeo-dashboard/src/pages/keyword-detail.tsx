@@ -8,6 +8,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
 import {
@@ -27,6 +28,25 @@ import {
   type PortalKeyword,
   type RankingReport,
 } from "@/lib/portal-api";
+
+interface ChartPoint {
+  key: string;
+  date: string;
+  chatgpt?: number;
+  gemini?: number;
+  perplexity?: number;
+}
+
+/* One line per AI platform, consistent colors + order across the app. */
+const PLATFORM_LINES: {
+  key: "chatgpt" | "gemini" | "perplexity";
+  label: string;
+  color: string;
+}[] = [
+  { key: "chatgpt", label: "ChatGPT", color: "#10b981" },
+  { key: "gemini", label: "Gemini", color: "#3b82f6" },
+  { key: "perplexity", label: "Perplexity", color: "#a855f7" },
+];
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return "-";
@@ -60,20 +80,27 @@ export default function KeywordDetailPage() {
     enabled: isValidId,
   });
 
+  /* One point per audit date, with a separate series per platform so the chart
+     draws three lines (ChatGPT / Gemini / Perplexity) instead of one zig-zag. */
   const chartData = useMemo(() => {
-    if (!reports) return [] as Array<{ date: string; position: number }>;
-    return [...reports]
-      .filter((r) => r.rankingPosition != null && (r.date || r.createdAt))
-      .sort((a, b) => {
-        const ad = a.date ?? a.createdAt;
-        const bd = b.date ?? b.createdAt;
-        return new Date(ad).getTime() - new Date(bd).getTime();
-      })
-      .map((r) => ({
-        date: format(new Date(r.date ?? r.createdAt), "MMM d"),
-        position: r.rankingPosition as number,
-        platform: r.platform ?? "",
-      }));
+    if (!reports) return [] as ChartPoint[];
+    const byDate = new Map<string, ChartPoint>();
+    for (const r of reports) {
+      if (r.rankingPosition == null) continue;
+      const raw = r.date ?? r.createdAt;
+      if (!raw) continue;
+      const key = raw.slice(0, 10);
+      let pt = byDate.get(key);
+      if (!pt) {
+        pt = { key, date: format(new Date(raw), "MMM d") };
+        byDate.set(key, pt);
+      }
+      const plat = (r.platform ?? "").toLowerCase();
+      if (plat === "chatgpt" || plat === "gemini" || plat === "perplexity") {
+        pt[plat] = r.rankingPosition;
+      }
+    }
+    return [...byDate.values()].sort((a, b) => a.key.localeCompare(b.key));
   }, [reports]);
 
   if (!isValidId) {
@@ -231,13 +258,19 @@ export default function KeywordDetailPage() {
                       fontSize: "0.75rem",
                     }}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="position"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
+                  <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+                  {PLATFORM_LINES.map((p) => (
+                    <Line
+                      key={p.key}
+                      type="monotone"
+                      dataKey={p.key}
+                      name={p.label}
+                      stroke={p.color}
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      connectNulls
+                    />
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             </div>
