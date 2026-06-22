@@ -355,10 +355,11 @@ function ChangePasswordCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <KeyRound className="w-5 h-5" /> Change Password
+          <KeyRound className="w-5 h-5" /> Password
         </CardTitle>
         <CardDescription>
-          Update the password you use to sign in.
+          Set a password to sign in with email + password, or change an existing
+          one. (You can always sign in with an email code too.)
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -377,9 +378,11 @@ function ChangePasswordCard() {
               autoComplete="current-password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              required
               data-testid="input-current-password"
             />
+            <p className="text-xs text-muted-foreground">
+              Leave blank if you haven't set a password yet.
+            </p>
           </div>
           <div className="space-y-2">
             <label htmlFor="newPassword" className="text-sm font-medium">
