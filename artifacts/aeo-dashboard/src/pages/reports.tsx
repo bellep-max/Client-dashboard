@@ -1,5 +1,18 @@
+import { useMemo } from "react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell,
+} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -12,9 +25,16 @@ import {
   ListChecks,
   Info,
   ChevronRight,
+  Sparkles,
+  Loader2,
+  Download,
 } from "lucide-react";
 import { format } from "date-fns";
-import { listPortalReports, type PortalReport } from "@/lib/portal-api";
+import {
+  listPortalReports,
+  summarizeReport,
+  type PortalReport,
+} from "@/lib/portal-api";
 
 const REPORTS_KEY = ["portal", "reports"] as const;
 
@@ -37,7 +57,8 @@ function joinList(parts: string[]): string {
   return `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
 }
 
-/** Plain-English recap a non-technical customer can read at a glance. */
+/** Plain-English recap a non-technical customer can read at a glance. Used as
+ *  the instant baseline before (and as a fallback for) the AI summary. */
 function plainSummary(r: PortalReport): string {
   const out: string[] = [];
   const n = r.keywordsTracked;
@@ -62,6 +83,236 @@ function plainSummary(r: PortalReport): string {
   return out.join(" ");
 }
 
+/** Reports sorted oldest → newest by period start. */
+function sortedByPeriod(reports: PortalReport[]): PortalReport[] {
+  return [...reports].sort(
+    (a, b) =>
+      new Date(a.periodStart).getTime() - new Date(b.periodStart).getTime(),
+  );
+}
+
+/** DeepSeek plain-English summary for the selected report. Shows the rule-based
+ *  recap instantly, then swaps in the AI version when it arrives (and prints
+ *  whatever is on screen). Falls back to the rule-based recap on error. */
+function AiSummary({
+  report,
+  prev,
+}: {
+  report: PortalReport;
+  prev: PortalReport | null;
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["portal", "report-summary", report.id],
+    queryFn: () =>
+      summarizeReport({
+        periodStart: report.periodStart,
+        periodEnd: report.periodEnd,
+        keywordsTracked: report.keywordsTracked,
+        keywordsImproved: report.keywordsImproved,
+        keywordsDeclined: report.keywordsDeclined,
+        averagePosition: report.averagePosition,
+        visibilityScore: report.visibilityScore,
+        prevAveragePosition: prev?.averagePosition ?? null,
+        prevVisibilityScore: prev?.visibilityScore ?? null,
+      }),
+    staleTime: Infinity,
+    retry: 1,
+  });
+
+  const text = data?.summary ?? plainSummary(report);
+
+  return (
+    <Card className="bg-primary/5 border-primary/20 print-avoid-break">
+      <CardContent className="pt-4 pb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold">Your summary</span>
+          {isLoading && (
+            <span className="no-print flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="w-3 h-3 animate-spin" /> writing…
+            </span>
+          )}
+        </div>
+        <p className="text-sm leading-relaxed">{text}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Average-position-over-time line chart. #1 sits at the top (axis reversed) so
+ *  a line climbing upward always means "getting closer to the top spot". */
+function PositionTrend({
+  reports,
+  selectedId,
+}: {
+  reports: PortalReport[];
+  selectedId: number;
+}) {
+  const data = useMemo(
+    () =>
+      sortedByPeriod(reports)
+        .filter((r) => r.averagePosition != null)
+        .map((r) => ({
+          label: format(new Date(r.periodEnd), "MMM d"),
+          position: Math.round(r.averagePosition as number),
+          current: r.id === selectedId,
+        })),
+    [reports, selectedId],
+  );
+
+  if (data.length < 2) return null;
+
+  return (
+    <Card className="print-avoid-break">
+      <CardHeader className="pb-1">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-primary" /> Average position over
+          time
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Closer to the top (#1) is better — a line going up means your business
+          is climbing in AI answers.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={data}
+              margin={{ top: 8, right: 16, bottom: 8, left: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis
+                reversed
+                allowDecimals={false}
+                tick={{ fontSize: 11 }}
+                domain={[1, "auto"]}
+                tickFormatter={(v: number) => `#${v}`}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "0.375rem",
+                  fontSize: "0.75rem",
+                }}
+                formatter={(value: number) => [`#${value}`, "Avg position"]}
+              />
+              <Line
+                type="monotone"
+                dataKey="position"
+                name="Avg position"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+                connectNulls
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const BREAKDOWN_COLORS = {
+  up: "#16a34a",
+  steady: "#94a3b8",
+  down: "#ef4444",
+};
+
+/** "What changed this period" — a simple, labeled bar chart of moved up / no
+ *  change / slipped, so the split is obvious without reading numbers. */
+function ChangeBreakdown({ report }: { report: PortalReport }) {
+  const data = [
+    {
+      name: "Moved up",
+      value: report.keywordsImproved,
+      fill: BREAKDOWN_COLORS.up,
+    },
+    {
+      name: "No change",
+      value: steadyCount(report),
+      fill: BREAKDOWN_COLORS.steady,
+    },
+    {
+      name: "Slipped",
+      value: report.keywordsDeclined,
+      fill: BREAKDOWN_COLORS.down,
+    },
+  ];
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  return (
+    <Card className="print-avoid-break">
+      <CardHeader className="pb-1">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <ListChecks className="w-4 h-4 text-primary" /> What changed this
+          period
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Of {report.keywordsTracked} search phrases we track for you.
+        </p>
+      </CardHeader>
+      <CardContent>
+        {total === 0 ? (
+          <p className="text-sm text-muted-foreground py-8 text-center">
+            No movement recorded for this period yet.
+          </p>
+        ) : (
+          <div className="h-56 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data}
+                layout="vertical"
+                margin={{ top: 4, right: 24, bottom: 4, left: 8 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  className="stroke-muted"
+                  horizontal={false}
+                />
+                <XAxis
+                  type="number"
+                  allowDecimals={false}
+                  tick={{ fontSize: 11 }}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tick={{ fontSize: 12 }}
+                  width={80}
+                />
+                <Tooltip
+                  cursor={{ fill: "hsl(var(--muted))", opacity: 0.3 }}
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "0.375rem",
+                    fontSize: "0.75rem",
+                  }}
+                  formatter={(value: number) => [`${value} phrases`, ""]}
+                />
+                <Bar
+                  dataKey="value"
+                  radius={[0, 4, 4, 0]}
+                  label={{ fontSize: 12 }}
+                >
+                  {data.map((d) => (
+                    <Cell key={d.name} fill={d.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ReportsPage() {
   const [selected, setSelected] = useState<PortalReport | null>(null);
 
@@ -70,11 +321,18 @@ export default function ReportsPage() {
     queryFn: listPortalReports,
   });
 
+  const prevReport = useMemo(() => {
+    if (!selected || !reports) return null;
+    const ordered = sortedByPeriod(reports);
+    const idx = ordered.findIndex((r) => r.id === selected.id);
+    return idx > 0 ? ordered[idx - 1] : null;
+  }, [selected, reports]);
+
   return (
     <div className="flex h-[calc(100vh-2px)] overflow-hidden">
       {/* Left — report period list */}
       <div
-        className={`w-full md:w-80 lg:w-96 border-r border-border bg-card flex flex-col h-full shrink-0 ${
+        className={`w-full md:w-80 lg:w-96 border-r border-border bg-card flex flex-col h-full shrink-0 no-print ${
           selected ? "hidden md:flex" : "flex"
         }`}
       >
@@ -145,15 +403,24 @@ export default function ReportsPage() {
             </p>
           </div>
         ) : (
-          <div className="p-6 space-y-6 max-w-4xl mx-auto">
-            {/* Mobile back */}
-            <button
-              type="button"
-              className="md:hidden flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-              onClick={() => setSelected(null)}
-            >
-              ← Back to reports
-            </button>
+          <div className="report-print-area p-6 space-y-6 max-w-4xl mx-auto">
+            {/* Mobile back + actions */}
+            <div className="flex items-center justify-between gap-3 no-print">
+              <button
+                type="button"
+                className="md:hidden flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                onClick={() => setSelected(null)}
+              >
+                ← Back to reports
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium hover:bg-muted/50 transition-colors"
+              >
+                <Download className="w-4 h-4" /> Download PDF
+              </button>
+            </div>
 
             <div>
               <h2 className="text-2xl font-bold">{periodLabel(selected)}</h2>
@@ -162,18 +429,17 @@ export default function ReportsPage() {
               </p>
             </div>
 
-            {/* Plain-English recap */}
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="pt-4 pb-4 flex gap-3">
-                <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <p className="text-sm leading-relaxed">
-                  {plainSummary(selected)}
-                </p>
-              </CardContent>
-            </Card>
+            {/* AI plain-English recap */}
+            <AiSummary report={selected} prev={prevReport} />
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <PositionTrend reports={reports ?? []} selectedId={selected.id} />
+              <ChangeBreakdown report={selected} />
+            </div>
 
             {/* What changed */}
-            <div>
+            <div className="print-avoid-break">
               <h3 className="text-sm font-semibold mb-2">What changed</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <MetricCard
@@ -206,7 +472,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Where you stand */}
-            <div>
+            <div className="print-avoid-break">
               <h3 className="text-sm font-semibold mb-2">Where you stand</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <MetricCard
@@ -235,7 +501,7 @@ export default function ReportsPage() {
             </div>
 
             {/* How to read this */}
-            <Card className="bg-muted/30">
+            <Card className="bg-muted/30 print-avoid-break">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Info className="w-4 h-4" /> How to read this report

@@ -326,6 +326,28 @@ export interface PortalReport {
 export const listPortalReports = (): Promise<PortalReport[]> =>
   request<PortalReport[]>("/api/businesses/me/reports");
 
+/** A short, plain-English DeepSeek recap of one report period. `prev*` fields
+ *  let the model mention progress versus the previous report. */
+export interface ReportSummaryInput {
+  periodStart: string;
+  periodEnd: string;
+  keywordsTracked: number;
+  keywordsImproved: number;
+  keywordsDeclined: number;
+  averagePosition: number | null;
+  visibilityScore: number | null;
+  prevAveragePosition?: number | null;
+  prevVisibilityScore?: number | null;
+}
+
+export const summarizeReport = (
+  input: ReportSummaryInput,
+): Promise<{ summary: string; cached: boolean }> =>
+  request<{ summary: string; cached: boolean }>("/api/reports/summarize", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
 // ---------------------------------------------------------------------------
 // Insights (read-only optimization transparency)
 // Backed by /api/portal/insights/* and /api/portal/keywords/:id/variants.
@@ -424,7 +446,8 @@ type InsightFilters = { aeoPlanId?: number; businessId?: number };
 
 function insightQuery(params: InsightFilters): string {
   const search = new URLSearchParams();
-  if (params.aeoPlanId != null) search.set("aeoPlanId", String(params.aeoPlanId));
+  if (params.aeoPlanId != null)
+    search.set("aeoPlanId", String(params.aeoPlanId));
   if (params.businessId != null)
     search.set("businessId", String(params.businessId));
   const qs = search.toString();
@@ -434,12 +457,16 @@ function insightQuery(params: InsightFilters): string {
 export const listLockedKeywords = (
   params: InsightFilters = {},
 ): Promise<LockedKeyword[]> =>
-  request<LockedKeyword[]>(`/api/insights/locked-keywords${insightQuery(params)}`);
+  request<LockedKeyword[]>(
+    `/api/insights/locked-keywords${insightQuery(params)}`,
+  );
 
 export const getRotationStatus = (
   params: InsightFilters = {},
 ): Promise<RotationStatus> =>
-  request<RotationStatus>(`/api/insights/rotation-status${insightQuery(params)}`);
+  request<RotationStatus>(
+    `/api/insights/rotation-status${insightQuery(params)}`,
+  );
 
 export const listKeywordVariants = (
   keywordId: number,
