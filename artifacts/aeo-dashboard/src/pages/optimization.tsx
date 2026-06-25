@@ -55,7 +55,7 @@ function StatCard({
     tone === "success"
       ? "text-emerald-500"
       : tone === "warning"
-        ? "text-red-500"
+        ? "text-amber-600"
         : "text-primary";
   return (
     <Card>
@@ -115,7 +115,9 @@ export default function OptimizationPage() {
 
   // Featured: the active keyword nearest to breaking into the top 3.
   const focus = active
-    .filter((k) => k.latestPosition != null && k.latestPosition > 3 && !k.atRisk)
+    .filter(
+      (k) => k.latestPosition != null && k.latestPosition > 3 && !k.atRisk,
+    )
     .sort((a, b) => {
       if (a.trend === "improving" && b.trend !== "improving") return -1;
       if (b.trend === "improving" && a.trend !== "improving") return 1;
@@ -145,7 +147,11 @@ export default function OptimizationPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Keywords tracked" value={summary.total} icon={Target} />
+        <StatCard
+          label="Keywords tracked"
+          value={summary.total}
+          icon={Target}
+        />
         <StatCard
           label="Actively optimizing"
           value={summary.active}
@@ -196,7 +202,9 @@ export default function OptimizationPage() {
       {platformEntries.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Visibility by AI platform</CardTitle>
+            <CardTitle className="text-base">
+              Visibility by AI platform
+            </CardTitle>
             <CardDescription>
               Average rank and top-3 coverage across the engines we track.
             </CardDescription>
@@ -211,7 +219,9 @@ export default function OptimizationPage() {
                   </p>
                   <p className="text-xs text-muted-foreground">avg rank</p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    <span className="text-emerald-500 font-medium">{v.top3}</span>{" "}
+                    <span className="text-emerald-500 font-medium">
+                      {v.top3}
+                    </span>{" "}
                     of {v.tracked} in top 3
                   </p>
                 </div>
@@ -223,10 +233,11 @@ export default function OptimizationPage() {
 
       {/* At risk */}
       {atRisk.length > 0 && (
-        <Card className="border-red-500/30">
+        <Card className="border-amber-500/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle className="w-4 h-4 text-red-500" /> Needs attention
+              <AlertTriangle className="w-4 h-4 text-amber-500" /> Needs
+              attention
               <Badge variant="secondary">{atRisk.length}</Badge>
             </CardTitle>
             <CardDescription>
@@ -360,7 +371,9 @@ export default function OptimizationPage() {
                 <li key={`${ev.keywordId}-${ev.type}-${i}`} className="ml-4">
                   <span
                     className={`absolute -left-1.5 flex h-3 w-3 items-center justify-center rounded-full ${
-                      ev.type === "locked" ? "bg-amber-500" : "bg-muted-foreground"
+                      ev.type === "locked"
+                        ? "bg-amber-500"
+                        : "bg-muted-foreground"
                     }`}
                   />
                   <div className="flex items-center gap-2">

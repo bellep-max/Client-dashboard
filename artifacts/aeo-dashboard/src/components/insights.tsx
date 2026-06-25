@@ -3,7 +3,13 @@
  * Optimization page, the campaign detail page, and the dashboard. All purely
  * presentational — no data fetching, no mutation.
  */
-import { TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  AlertTriangle,
+  Clock,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { PlatformRank, RankTrend } from "@/lib/portal-api";
@@ -27,15 +33,36 @@ function rankColor(position: number | null | undefined): string {
   return "text-muted-foreground";
 }
 
-export function RankBadge({ position }: { position: number | null | undefined }) {
+export function RankBadge({
+  position,
+}: {
+  position: number | null | undefined;
+}) {
   return (
-    <span className={cn("font-mono text-sm font-semibold", rankColor(position))}>
+    <span
+      className={cn("font-mono text-sm font-semibold", rankColor(position))}
+    >
       {position == null ? "—" : `#${position}`}
     </span>
   );
 }
 
-export function TrendBadge({ trend }: { trend: RankTrend }) {
+export function TrendBadge({
+  trend,
+  totalRuns,
+}: {
+  trend: RankTrend;
+  totalRuns?: number;
+}) {
+  // A trend needs at least two measurements to mean anything. Until then show
+  // "New" instead of a misleading "Steady".
+  if (totalRuns != null && totalRuns < 2) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+        <Clock className="w-3.5 h-3.5" /> New
+      </span>
+    );
+  }
   if (trend === "improving") {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
@@ -45,7 +72,7 @@ export function TrendBadge({ trend }: { trend: RankTrend }) {
   }
   if (trend === "declining") {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+      <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
         <TrendingDown className="w-3.5 h-3.5" /> Declining
       </span>
     );
@@ -61,7 +88,7 @@ export function AtRiskBadge() {
   return (
     <Badge
       variant="outline"
-      className="gap-1 border-red-500/40 text-red-600 dark:text-red-400 text-xs"
+      className="gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400 text-xs"
     >
       <AlertTriangle className="w-3 h-3" /> At risk
     </Badge>
@@ -102,7 +129,7 @@ export function Sparkline({
     last < first
       ? "stroke-emerald-500"
       : last > first
-        ? "stroke-red-500"
+        ? "stroke-amber-500"
         : "stroke-muted-foreground";
   return (
     <svg
@@ -126,11 +153,18 @@ export function Sparkline({
 export function StabilityBar({ percent }: { percent: number }) {
   const pct = Math.max(0, Math.min(100, percent));
   const color =
-    pct >= 66 ? "bg-emerald-500" : pct >= 33 ? "bg-amber-500" : "bg-muted-foreground";
+    pct >= 66
+      ? "bg-emerald-500"
+      : pct >= 33
+        ? "bg-amber-500"
+        : "bg-muted-foreground";
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
-        <div className={cn("h-full rounded-full", color)} style={{ width: `${pct}%` }} />
+        <div
+          className={cn("h-full rounded-full", color)}
+          style={{ width: `${pct}%` }}
+        />
       </div>
       <span className="text-xs tabular-nums text-muted-foreground">{pct}%</span>
     </div>
@@ -147,7 +181,9 @@ export function PlatformChips({
     ([, v]) => v && v.position != null,
   );
   if (entries.length === 0) {
-    return <span className="text-xs text-muted-foreground">No rankings yet</span>;
+    return (
+      <span className="text-xs text-muted-foreground">No rankings yet</span>
+    );
   }
   return (
     <div className="flex flex-wrap gap-1.5">

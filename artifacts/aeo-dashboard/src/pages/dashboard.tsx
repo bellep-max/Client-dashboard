@@ -95,8 +95,8 @@ function TrendBadge({
   if (current > initial) {
     const delta = current - initial;
     return (
-      <span className="flex items-center gap-1 text-xs font-medium text-red-500">
-        <TrendingDown className="w-3.5 h-3.5" /> ↓{delta} vs initial
+      <span className="flex items-center gap-1 text-xs font-medium text-amber-600">
+        <TrendingDown className="w-3.5 h-3.5" /> {delta} vs initial
       </span>
     );
   }
@@ -329,34 +329,43 @@ export default function DashboardPage() {
             </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {businesses.slice(0, 6).map((biz) => (
-                <Link key={biz.id} href={`/businesses/${biz.id}`}>
-                  <div className="border rounded-lg p-3 hover:bg-muted/40 hover:border-primary/40 transition-colors cursor-pointer">
-                    <div className="font-medium text-sm truncate">
-                      {biz.name?.trim() ? biz.name : `Business #${biz.id}`}
+              {businesses.slice(0, 6).map((biz) => {
+                const b = biz as any;
+                const address =
+                  b.publishedAddress?.trim() ||
+                  [b.city, b.state].filter(Boolean).join(", ");
+                return (
+                  <Link key={biz.id} href={`/businesses/${biz.id}`}>
+                    <div className="border rounded-lg p-3 hover:bg-muted/40 hover:border-primary/40 transition-colors cursor-pointer">
+                      <div className="font-medium text-sm truncate">
+                        {biz.name?.trim() ? biz.name : `Business #${biz.id}`}
+                      </div>
+                      {address && (
+                        <div className="text-xs text-muted-foreground truncate mt-0.5">
+                          {address}
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground truncate mt-0.5">
+                        {b.notes || "No category set"}
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {b.campaignCount ?? 0} campaign
+                          {b.campaignCount !== 1 ? "s" : ""}
+                        </Badge>
+                        <Badge
+                          variant={
+                            b.status === "active" ? "default" : "outline"
+                          }
+                          className="text-xs capitalize"
+                        >
+                          {b.status ?? "—"}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground truncate mt-0.5">
-                      {(biz as any).notes || "No category set"}
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {(biz as any).campaignCount ?? 0} campaign
-                        {(biz as any).campaignCount !== 1 ? "s" : ""}
-                      </Badge>
-                      <Badge
-                        variant={
-                          (biz as any).status === "active"
-                            ? "default"
-                            : "outline"
-                        }
-                        className="text-xs capitalize"
-                      >
-                        {(biz as any).status ?? "—"}
-                      </Badge>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           )}
         </CardContent>

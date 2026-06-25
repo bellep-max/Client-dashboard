@@ -217,10 +217,78 @@ function PositionTrend({
   );
 }
 
+/** "Search phrases checked over time" — a line chart (same style as the keyword
+ *  ranking history) so the period-to-period count reads as a trend instead of a
+ *  jumpy single number. Y-axis is floored at 0 so it can never dip negative. */
+function PhrasesTrend({ reports }: { reports: PortalReport[] }) {
+  const data = useMemo(
+    () =>
+      sortedByPeriod(reports).map((r) => ({
+        label: format(new Date(r.periodEnd), "MMM d"),
+        phrases: r.keywordsTracked,
+      })),
+    [reports],
+  );
+
+  if (data.length < 2) return null;
+
+  return (
+    <Card className="print-avoid-break">
+      <CardHeader className="pb-1">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <ListChecks className="w-4 h-4 text-primary" /> Search phrases checked
+          over time
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          How many phrases we checked each period. This shifts over time as we
+          rotate in fresh phrases once others reach the top.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <div className="h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={data}
+              margin={{ top: 8, right: 16, bottom: 8, left: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fontSize: 11 }}
+                domain={[0, "auto"]}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "0.375rem",
+                  fontSize: "0.75rem",
+                }}
+                formatter={(value: number) => [`${value} phrases`, "Checked"]}
+              />
+              <Line
+                type="monotone"
+                dataKey="phrases"
+                name="Phrases checked"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                activeDot={{ r: 5 }}
+                connectNulls
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 const BREAKDOWN_COLORS = {
   up: "#16a34a",
   steady: "#94a3b8",
-  down: "#ef4444",
+  down: "#f59e0b",
 };
 
 /** "What changed this period" — a simple, labeled bar chart of moved up / no
@@ -381,8 +449,8 @@ export default function ReportsPage() {
                     <span className="text-xs text-green-600 font-medium">
                       ↑ {r.keywordsImproved} moved up
                     </span>
-                    <span className="text-xs text-red-500 font-medium">
-                      ↓ {r.keywordsDeclined} slipped
+                    <span className="text-xs text-amber-600 font-medium">
+                      {r.keywordsDeclined} slipped
                     </span>
                   </div>
                 </div>
@@ -438,6 +506,8 @@ export default function ReportsPage() {
               <ChangeBreakdown report={selected} />
             </div>
 
+            <PhrasesTrend reports={reports ?? []} />
+
             {/* What changed */}
             <div className="print-avoid-break">
               <h3 className="text-sm font-semibold mb-2">What changed</h3>
@@ -459,8 +529,8 @@ export default function ReportsPage() {
                   label="Slipped"
                   value={selected.keywordsDeclined}
                   help="Ranked worse than last report"
-                  icon={<TrendingDown className="w-4 h-4 text-red-500" />}
-                  valueClass="text-red-500"
+                  icon={<TrendingDown className="w-4 h-4 text-amber-600" />}
+                  valueClass="text-amber-600"
                 />
                 <MetricCard
                   label="No change"

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Link, useRoute } from "wouter";
+import { Link, useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   LineChart,
@@ -48,19 +48,19 @@ const PLATFORM_LINES: {
   { key: "perplexity", label: "Perplexity", color: "#a855f7" },
 ];
 
-function formatDate(value: string | null | undefined): string {
-  if (!value) return "-";
-  try {
-    return format(new Date(value), "MMM d, yyyy");
-  } catch {
-    return value;
-  }
-}
-
 export default function KeywordDetailPage() {
   const [, params] = useRoute<{ id: string }>("/keywords/:id");
   const idNum = Number.parseInt(params?.id ?? "", 10);
   const isValidId = !Number.isNaN(idNum);
+  const [, setLocation] = useLocation();
+
+  // Return to wherever the keyword was opened from (the campaign keywords list
+  // in most cases). The old standalone "/keywords" tracking page is gone, so
+  // fall back to the dashboard when there's no history to pop.
+  const goBack = () => {
+    if (window.history.length > 1) window.history.back();
+    else setLocation("/dashboard");
+  };
 
   const {
     data: keyword,
@@ -103,6 +103,27 @@ export default function KeywordDetailPage() {
     return [...byDate.values()].sort((a, b) => a.key.localeCompare(b.key));
   }, [reports]);
 
+  /* Client-friendly headline numbers derived from the ranking reports: where the
+     keyword ranks now (best position on the most recent audit day) and the best
+     it has ever reached. */
+  const stats = useMemo(() => {
+    const byDay = new Map<string, number>();
+    for (const r of reports ?? []) {
+      if (r.rankingPosition == null || r.rankingPosition < 1) continue;
+      const day = (r.date ?? r.createdAt ?? "").slice(0, 10);
+      if (!day) continue;
+      const cur = byDay.get(day);
+      if (cur == null || r.rankingPosition < cur)
+        byDay.set(day, r.rankingPosition);
+    }
+    const days = [...byDay.keys()].sort();
+    if (days.length === 0) return { currentPosition: null, bestPosition: null };
+    return {
+      currentPosition: byDay.get(days[days.length - 1]) ?? null,
+      bestPosition: Math.min(...byDay.values()),
+    };
+  }, [reports]);
+
   if (!isValidId) {
     return (
       <div className="p-6 max-w-3xl mx-auto">
@@ -122,11 +143,9 @@ export default function KeywordDetailPage() {
   if (kwError || !keyword) {
     return (
       <div className="p-6 max-w-3xl mx-auto space-y-4">
-        <Link href="/keywords">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to keywords
-          </Button>
-        </Link>
+        <Button variant="ghost" size="sm" onClick={goBack}>
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back
+        </Button>
         <p className="text-destructive">Could not load this keyword.</p>
       </div>
     );
@@ -135,11 +154,9 @@ export default function KeywordDetailPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/keywords">
-          <Button variant="ghost" size="icon" aria-label="Back to keywords">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
+        <Button variant="ghost" size="icon" aria-label="Back" onClick={goBack}>
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
         <div className="min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight truncate">
             {keyword.keywordText}
@@ -172,35 +189,56 @@ export default function KeywordDetailPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
-              Keyword type
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-semibold capitalize">
-              {keyword.keywordType ?? "-"}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
-              Last run
+              Current position
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl font-semibold">
-              {formatDate(keyword.lastRunAt)}
+              {stats.currentPosition != null ? (
+                `#${stats.currentPosition}`
+              ) : (
+                <span className="text-base font-normal text-muted-foreground">
+                  Not ranked yet
+                </span>
+              )}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Where you rank now in AI answers (#1 is best)
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
-              Total runs recorded
+              Best position
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-semibold">
+              {stats.bestPosition != null ? (
+                `#${stats.bestPosition}`
+              ) : (
+                <span className="text-base font-normal text-muted-foreground">
+                  —
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              The highest spot you've reached so far
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs text-muted-foreground uppercase tracking-wider">
+              Times checked
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl font-semibold">{reports?.length ?? 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              How many times we've measured this keyword
+            </p>
           </CardContent>
         </Card>
       </div>

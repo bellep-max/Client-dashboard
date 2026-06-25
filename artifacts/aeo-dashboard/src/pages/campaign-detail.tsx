@@ -79,7 +79,7 @@ function KeywordInsightRow({ kw }: { kw: RotationKeyword }) {
         <PlatformChips platforms={kw.platforms} />
       </TableCell>
       <TableCell>
-        <TrendBadge trend={kw.trend} />
+        <TrendBadge trend={kw.trend} totalRuns={kw.totalRuns} />
       </TableCell>
       <TableCell>
         <Sparkline data={kw.sparkline} />
@@ -147,6 +147,14 @@ export default function CampaignDetailPage() {
 
   const keywords = insights?.keywords ?? [];
   const locked = keywords.filter((k) => k.status === "locked");
+  // Locked (won) keywords show in the "Won keywords" card above, so the main
+  // table lists only the non-locked ones, sorted by best current rank ascending
+  // (unranked last).
+  const rankOf = (k: RotationKeyword) =>
+    k.latestPosition == null ? Number.POSITIVE_INFINITY : k.latestPosition;
+  const sortedKeywords = keywords
+    .filter((k) => k.status !== "locked")
+    .sort((a, b) => rankOf(a) - rankOf(b));
   const platformEntries = Object.entries(
     insights?.platformAggregate ?? {},
   ).filter(([, v]) => v.tracked > 0);
@@ -369,7 +377,7 @@ export default function CampaignDetailPage() {
                     <Loader2 className="w-5 h-5 animate-spin mx-auto text-primary" />
                   </TableCell>
                 </TableRow>
-              ) : keywords.length === 0 ? (
+              ) : sortedKeywords.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={6}
@@ -380,7 +388,9 @@ export default function CampaignDetailPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                keywords.map((kw) => <KeywordInsightRow key={kw.id} kw={kw} />)
+                sortedKeywords.map((kw) => (
+                  <KeywordInsightRow key={kw.id} kw={kw} />
+                ))
               )}
             </TableBody>
           </Table>

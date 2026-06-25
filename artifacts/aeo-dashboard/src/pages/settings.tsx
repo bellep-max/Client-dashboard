@@ -1,14 +1,5 @@
 import React, { useState } from "react";
-import {
-  useGetMyBusiness,
-  useListBusinesses,
-  useSwitchBusiness,
-  useListGbpProfiles,
-  useListWebsites,
-  getGetMyBusinessQueryKey,
-  getListBusinessesQueryKey,
-} from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useGetMyBusiness } from "@workspace/api-client-react";
 import {
   Card,
   CardContent,
@@ -18,19 +9,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Building, Globe, Check, KeyRound, Lock } from "lucide-react";
+import { Loader2, KeyRound, Lock } from "lucide-react";
 
-/** Read-only labelled value used across the (now non-editable) profile cards. */
+/** Read-only labelled value used by the account card. */
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
@@ -43,32 +25,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export default function SettingsPage() {
-  const queryClient = useQueryClient();
   const { data: business, isLoading: isBusinessLoading } = useGetMyBusiness();
-  const { data: allBusinesses, isLoading: isAllBusinessesLoading } =
-    useListBusinesses();
-  const { data: gbps, isLoading: isGbpLoading } = useListGbpProfiles();
-  const { data: websites, isLoading: isWebsitesLoading } = useListWebsites();
-
-  const switchBusiness = useSwitchBusiness();
-
-  const handleSwitch = (businessId: number) => {
-    switchBusiness.mutate(
-      { data: { businessId } },
-      {
-        onSuccess: () => {
-          toast.success("Switched active business");
-          queryClient.invalidateQueries({
-            queryKey: getGetMyBusinessQueryKey(),
-          });
-          queryClient.invalidateQueries({
-            queryKey: getListBusinessesQueryKey(),
-          });
-        },
-        onError: () => toast.error("Failed to switch business"),
-      },
-    );
-  };
 
   if (isBusinessLoading) {
     return (
@@ -82,94 +39,26 @@ export default function SettingsPage() {
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground mt-1">
-          View your business profile and connected assets.
-        </p>
+        <p className="text-muted-foreground mt-1">View your account details.</p>
       </div>
 
       {/* Account-managed notice */}
       <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-4 py-3">
         <Lock className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
         <p className="text-sm text-muted-foreground">
-          Your business details are managed by your account team. To update any
+          Your account details are managed by your account team. To update any
           of this information, please contact your admin.
         </p>
       </div>
 
       <div className="grid gap-8">
-        {/* Businesses */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building className="w-5 h-5" /> Businesses
-            </CardTitle>
-            <CardDescription>
-              Your business profiles. Switch which one is currently active.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isAllBusinessesLoading ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {allBusinesses?.map((biz) => (
-                  <div
-                    key={biz.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                      biz.isActive
-                        ? "border-primary bg-primary/5"
-                        : "border-border"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {biz.isActive && (
-                        <Check className="w-4 h-4 text-primary shrink-0" />
-                      )}
-                      <div>
-                        <div className="font-medium text-sm">
-                          {biz.businessName}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {biz.industry || "No industry set"}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {biz.isActive ? (
-                        <Badge>Active</Badge>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSwitch(biz.id)}
-                          disabled={switchBusiness.isPending}
-                          data-testid={`button-switch-business-${biz.id}`}
-                        >
-                          Switch
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                {!allBusinesses?.length && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No businesses set up yet.
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Business Profile (read-only) */}
+        {/* Account (read-only) */}
         {business && (
           <Card>
             <CardHeader>
-              <CardTitle>Active Business</CardTitle>
+              <CardTitle>Account</CardTitle>
               <CardDescription>
-                Profile for{" "}
+                Account details for{" "}
                 <span className="font-medium text-foreground">
                   {business.businessName}
                 </span>
@@ -181,128 +70,9 @@ export default function SettingsPage() {
                 <Field label="Business Name" value={business.businessName} />
               </div>
               <Field label="Owner Name" value={business.ownerName} />
-              <Field label="Subscriber Name" value={business.subscriberName} />
-              <Field label="Industry" value={business.industry} />
-              <div className="md:col-span-2">
-                <Field
-                  label="Business Description"
-                  value={business.description}
-                />
-              </div>
             </CardContent>
           </Card>
         )}
-
-        {/* Connected Assets (read-only) */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5" /> Connected Assets
-            </CardTitle>
-            <CardDescription>
-              Your Google Business Profiles and digital footprint links.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
-                Google Business Profiles
-              </h3>
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Profile Name</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isGbpLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={2} className="text-center py-4">
-                          <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ) : gbps?.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={2}
-                          className="text-center py-4 text-muted-foreground text-sm"
-                        >
-                          No profiles connected
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      gbps?.map((gbp) => (
-                        <TableRow key={gbp.id}>
-                          <TableCell className="font-medium">
-                            {gbp.businessName}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                gbp.isVerified ? "default" : "destructive"
-                              }
-                            >
-                              {gbp.isVerified ? "Verified" : "Unverified"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
-                Websites &amp; Links
-              </h3>
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>URL</TableHead>
-                      <TableHead>Type</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isWebsitesLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={2} className="text-center py-4">
-                          <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ) : websites?.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={2}
-                          className="text-center py-4 text-muted-foreground text-sm"
-                        >
-                          No websites connected
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      websites?.map((site) => (
-                        <TableRow key={site.id}>
-                          <TableCell className="font-medium truncate max-w-[200px]">
-                            {site.url}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {site.linkType}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <ChangePasswordCard />
       </div>
