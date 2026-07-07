@@ -181,6 +181,11 @@ export default function KeywordDetailPage() {
             <Badge variant="outline" className="capitalize">
               {keyword.status ?? "-"}
             </Badge>
+            {keyword.status === "locked" && keyword.wonAt ? (
+              <span className="text-muted-foreground">
+                · Locked on {format(new Date(keyword.wonAt), "MMM d, yyyy")}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
