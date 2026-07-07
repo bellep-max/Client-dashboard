@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/InfoTip";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -199,12 +200,40 @@ export default function BusinessDetailPage() {
                             : `Campaign #${plan.id}`}
                         </span>
                       </Link>
-                      {plan.keywordCount != null && plan.keywordCount > 0 && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {plan.keywordCount} active keyword
-                          {plan.keywordCount !== 1 ? "s" : ""}
-                        </p>
-                      )}
+                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+                        <span>
+                          <span className="font-medium text-foreground">
+                            {plan.activeCount ?? plan.keywordCount ?? 0}
+                          </span>{" "}
+                          active
+                          <InfoTip label="What are active keywords">
+                            Keywords we&rsquo;re actively working to move up the
+                            rankings right now.
+                          </InfoTip>
+                        </span>
+                        <span>
+                          <span className="font-medium text-foreground">
+                            {plan.watchCount ?? 0}
+                          </span>{" "}
+                          under watch
+                          <InfoTip label="What are under-watch keywords">
+                            Keywords that were ranking but have slipped out of
+                            the top lately — we&rsquo;re watching these closely
+                            and adjusting.
+                          </InfoTip>
+                        </span>
+                        <span>
+                          <span className="font-medium text-foreground">
+                            {plan.lockedCount ?? 0}
+                          </span>{" "}
+                          locked
+                          <InfoTip label="What are locked keywords">
+                            Keywords that reached the top and are
+                            &ldquo;won&rdquo; — we hold their spot and shift
+                            effort to other keywords.
+                          </InfoTip>
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="capitalize">

@@ -75,6 +75,9 @@ export interface AeoPlan {
   createdAt: string;
   updatedAt: string;
   keywordCount?: number;
+  activeCount?: number;
+  watchCount?: number;
+  lockedCount?: number;
 }
 
 export type AeoPlanCreate = {
@@ -208,6 +211,8 @@ export interface PortalKeyword {
   initialRanking: number | null;
   currentRanking: number | null;
   isLocked: boolean;
+  /** Derived date the keyword's win was locked in (only set for locked kws). */
+  wonAt: string | null;
   links: Array<{
     id: number;
     keywordId: number;

@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ArrowLeft, Loader2, Key, Lock, Trophy } from "lucide-react";
+import { InfoTip } from "@/components/InfoTip";
 import { format } from "date-fns";
 import {
   getAeoPlan,
@@ -266,7 +267,15 @@ export default function CampaignDetailPage() {
       {platformEntries.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Rankings by AI platform</CardTitle>
+            <CardTitle className="text-base flex items-center gap-1.5">
+              Rankings by AI platform
+              <InfoTip label="How the average is calculated">
+                <strong>Your average spot on this platform right now.</strong>{" "}
+                We take where each of your keywords currently ranks and average
+                them — keywords that aren&rsquo;t ranking yet don&rsquo;t count.
+                Lower is better (#1 is the top).
+              </InfoTip>
+            </CardTitle>
             <CardDescription>
               Where this campaign stands across the engines we track.
             </CardDescription>
