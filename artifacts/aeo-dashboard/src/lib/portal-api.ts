@@ -479,3 +479,155 @@ export const listKeywordVariants = (
   request<{ variants: KeywordVariant[]; total: number }>(
     `/api/keywords/${keywordId}/variants`,
   );
+
+// ---------------------------------------------------------------------------
+// Summary Report (bi-weekly performance summary, parallel to admin panel)
+// Backed by /api/portal/summary, /api/portal/summary/available-dates,
+// /api/portal/summary/narrative, and /api/portal/glossary. ClientId is inferred
+// from the portal session — never passed from the client.
+// ---------------------------------------------------------------------------
+
+export type SummaryScope = "client" | "business" | "campaign";
+export type SummaryComparison = "prior-run" | "all-time";
+
+export interface SummaryMetrics {
+  tracked: number;
+  withRank: number;
+  top3: number;
+  improved: number;
+  declined: number;
+  steady: number;
+  avgCurrent: number | null;
+  avgFirst: number | null;
+}
+
+export interface SummaryPlatform {
+  platform: string;
+  label: string;
+  tracked: number;
+  top3: number;
+  avgCurrent: number | null;
+}
+
+export interface SummaryMover {
+  keyword: string;
+  first: number | null;
+  current: number | null;
+}
+
+export interface SummaryLockedPlatform {
+  platform: string;
+  label: string;
+  position: number | null;
+  reason: string;
+}
+
+export interface SummaryLocked {
+  keyword: string;
+  campaignName: string | null;
+  businessName: string | null;
+  platforms: SummaryLockedPlatform[];
+}
+
+export interface SummaryWatch {
+  keyword: string;
+  latestPosition: number | null;
+  stallingSince: string | null;
+}
+
+export interface SummaryDecline {
+  keyword: string;
+  from: number | null;
+  to: number | null;
+  reason: string;
+}
+
+export interface SummaryReportData {
+  scope: SummaryScope;
+  businessId: number | null;
+  aeoPlanId: number | null;
+  date: string | null;
+  comparison: SummaryComparison;
+  metrics: SummaryMetrics;
+  platforms: SummaryPlatform[];
+  movers: SummaryMover[];
+  locked: SummaryLocked[];
+  watch: SummaryWatch[];
+  declines: SummaryDecline[];
+  glossaryVersion: string;
+}
+
+export interface SummaryAvailableDate {
+  date: string;
+  count: number;
+}
+
+export interface GlossaryTerm {
+  term: string;
+  definition: string;
+}
+
+export interface Glossary {
+  version: string;
+  terms: Record<string, GlossaryTerm>;
+}
+
+export interface NarrativeSections {
+  overall: string;
+  trend: string;
+  movers: string;
+  platforms: string;
+  locked: string;
+  declines: string;
+}
+
+export interface HowAeoWorksStep {
+  title: string;
+  body: string;
+}
+
+export interface SummaryNarrative {
+  sections: NarrativeSections;
+  howAeoWorks: HowAeoWorksStep[];
+  cached: boolean;
+}
+
+export interface SummaryScopeParams {
+  scope: SummaryScope;
+  businessId?: number | null;
+  aeoPlanId?: number | null;
+  date?: string | null;
+}
+
+function summaryQuery(params: SummaryScopeParams): string {
+  const search = new URLSearchParams();
+  search.set("scope", params.scope);
+  if (params.businessId != null)
+    search.set("businessId", String(params.businessId));
+  if (params.aeoPlanId != null)
+    search.set("aeoPlanId", String(params.aeoPlanId));
+  if (params.date != null && params.date !== "")
+    search.set("date", params.date);
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export const getGlossary = (): Promise<Glossary> =>
+  request<Glossary>("/api/glossary");
+
+export const getSummaryAvailableDates = (
+  params: Omit<SummaryScopeParams, "date">,
+): Promise<{ dates: SummaryAvailableDate[] }> =>
+  request<{ dates: SummaryAvailableDate[] }>(
+    `/api/summary/available-dates${summaryQuery(params)}`,
+  );
+
+export const getSummaryReport = (
+  params: SummaryScopeParams,
+): Promise<SummaryReportData> =>
+  request<SummaryReportData>(`/api/summary${summaryQuery(params)}`);
+
+export const getSummaryNarrative = (
+  params: SummaryScopeParams,
+): Promise<SummaryNarrative> =>
+  request<SummaryNarrative>(`/api/summary/narrative${summaryQuery(params)}`);
