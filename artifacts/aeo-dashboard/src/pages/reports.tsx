@@ -111,11 +111,15 @@ export default function ReportsPage() {
     staleTime: 60_000,
   });
 
-  // Reset the period whenever the scope selection changes — a date valid for
-  // one scope may not exist in another.
+  // Default to the latest available run, and — when the scope changes — fall
+  // back to the latest if the currently-picked date has no data for the new
+  // scope. Dates arrive newest-first from the endpoint.
   useEffect(() => {
-    setDate(null);
-  }, [scope, businessId, aeoPlanId]);
+    const list = availableDates?.dates;
+    if (!list || list.length === 0) return;
+    const stillAvailable = date != null && list.some((d) => d.date === date);
+    if (!stillAvailable) setDate(list[0].date);
+  }, [availableDates, date]);
 
   const {
     data: report,
