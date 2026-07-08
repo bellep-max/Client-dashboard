@@ -1,8 +1,9 @@
 /**
  * Scope + date controls for the Summary Report. Scope picks the audience of the
- * report (whole client, one business, or one campaign); the date dropdown is
- * built from /summary/available-dates ("All" = all-time, a date = the period
- * ending then). Purely presentational — parent owns the state.
+ * report (whole client, one business, or one campaign); the period is picked
+ * from a month-grid calendar whose selectable days are the dates that actually
+ * have a report for the current scope (/summary/available-dates). Purely
+ * presentational — parent owns the state.
  */
 import {
   Select,
@@ -12,20 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { DateCalendar } from "@/components/summary/DateCalendar";
 import type {
   AeoPlan,
   PortalBusiness,
   SummaryAvailableDate,
   SummaryScope,
 } from "@/lib/portal-api";
-import { format } from "date-fns";
-
-const ALL_DATES = "__all__";
-
-function prettyDate(value: string): string {
-  const d = new Date(`${value}T00:00:00`);
-  return Number.isNaN(d.getTime()) ? value : format(d, "MMM d, yyyy");
-}
 
 export function SummaryControls({
   scope,
@@ -122,23 +116,7 @@ export function SummaryControls({
 
       <div className="flex-1 min-w-[12rem] space-y-1">
         <Label className="text-xs text-muted-foreground">Period</Label>
-        <Select
-          value={date ?? ALL_DATES}
-          onValueChange={(v) => onDateChange(v === ALL_DATES ? null : v)}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_DATES}>All time</SelectItem>
-            {dates.map((d) => (
-              <SelectItem key={d.date} value={d.date}>
-                {prettyDate(d.date)}
-                {d.count ? ` (${d.count})` : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <DateCalendar dates={dates} value={date} onChange={onDateChange} />
       </div>
     </div>
   );
