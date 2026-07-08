@@ -24,7 +24,10 @@ import {
 } from "@/lib/portal-api";
 import { BUSINESSES_QUERY_KEY } from "@/pages/businesses";
 import { CAMPAIGNS_QUERY_KEY } from "@/pages/campaigns";
-import { SummaryControls } from "@/components/summary/SummaryControls";
+import {
+  SummaryControls,
+  type ScopeState,
+} from "@/components/summary/SummaryControls";
 import {
   OverallNarrative,
   MetricsCards,
@@ -72,9 +75,12 @@ function periodTitle(date: string | null): string {
 }
 
 export default function ReportsPage() {
-  const [scope, setScope] = useState<SummaryScope>("client");
-  const [businessId, setBusinessId] = useState<number | null>(null);
-  const [aeoPlanId, setAeoPlanId] = useState<number | null>(null);
+  const [scopeState, setScopeState] = useState<ScopeState>({
+    scope: "client",
+    businessId: null,
+    aeoPlanId: null,
+  });
+  const { scope, businessId, aeoPlanId } = scopeState;
   const [date, setDate] = useState<string | null>(null);
 
   const { data: businesses } = useQuery<PortalBusiness[]>({
@@ -169,14 +175,10 @@ export default function ReportsPage() {
       </div>
 
       <SummaryControls
-        scope={scope}
-        onScopeChange={setScope}
+        value={scopeState}
+        onScopeChange={setScopeState}
         businesses={businesses ?? []}
-        businessId={businessId}
-        onBusinessChange={setBusinessId}
         campaigns={campaigns ?? []}
-        aeoPlanId={aeoPlanId}
-        onCampaignChange={setAeoPlanId}
         dates={dates}
         date={date}
         onDateChange={setDate}
