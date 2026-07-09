@@ -28,6 +28,7 @@ import {
   SummaryControls,
   type ScopeState,
 } from "@/components/summary/SummaryControls";
+import { OverviewNarrative } from "@/components/summary/OverviewNarrative";
 import {
   OverallNarrative,
   MetricsCards,
@@ -203,6 +204,11 @@ export default function ReportsPage() {
         </p>
       ) : (
         <div className="space-y-6">
+          <OverviewNarrative
+            blocks={narrative?.overview ?? []}
+            loading={narrativeLoading}
+          />
+
           <div>
             <h2 className="text-lg font-semibold">
               {periodTitle(report.date)}
