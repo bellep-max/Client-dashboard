@@ -586,7 +586,13 @@ export interface HowAeoWorksStep {
   body: string;
 }
 
+export interface OverviewBlock {
+  heading: string;
+  body: string;
+}
+
 export interface SummaryNarrative {
+  overview: OverviewBlock[];
   sections: NarrativeSections;
   howAeoWorks: HowAeoWorksStep[];
   cached: boolean;
